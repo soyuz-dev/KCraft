@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "kcraft",
+  "version": "${version}",
+  "name": "KCraft",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "MPL-2.0",
+  "icon": "assets/kcraft/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-datagen": [
+      "org.soyuz.kcraft.client.KCraftDataGenerator"
+    ],
+    "client": [
+      "org.soyuz.kcraft.client.KCraftClient"
+    ],
+    "main": [
+      "org.soyuz.kcraft.KCraft"
+    ]
+  },
+  "mixins": [
+    "kcraft.mixins.json",
+    {
+      "config": "kcraft.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-language-kotlin": ">=${kotlin_loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
