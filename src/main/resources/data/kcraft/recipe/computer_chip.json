@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "RQR",
+    "QCQ",
+    "EKE"
+  ],
+  "key": {
+    "R": "kcraft:ruby",
+    "Q": "minecraft:quartz",
+    "C": "minecraft:clock",
+    "K": "minecraft:compass",
+    "E": "minecraft:redstone"
+  },
+  "result": {
+    "id": "kcraft:computer_chip"
+  }
+}

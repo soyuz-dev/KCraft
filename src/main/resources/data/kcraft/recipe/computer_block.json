@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "IDI",
+    "PCP",
+    "IBI"
+  ],
+  "key": {
+    "C": "kcraft:computer_chip",
+    "I": "minecraft:iron_ingot",
+    "P": "minecraft:glass_pane",
+    "B": "minecraft:stone_button",
+    "D": "#kcraft:computer_displays"
+  },
+  "result": {
+    "id": "kcraft:computer_block"
+  }
+}
