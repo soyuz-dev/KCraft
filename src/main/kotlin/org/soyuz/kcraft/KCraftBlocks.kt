@@ -54,7 +54,6 @@ object KCraftBlocks {
         BlockBehaviour.Properties.of()
     )
 
-
     fun initialize() {
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.BUILDING_BLOCKS)
             .register(CreativeModeTabEvents.ModifyOutput {
