@@ -66,4 +66,4 @@ println("Mining complete!")
 ```
 
 ## License
-LGPL 3.0
+MPL 2.0

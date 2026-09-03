@@ -10,6 +10,7 @@ import net.minecraft.world.item.Item
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.SoundType
 import net.minecraft.world.level.block.state.BlockBehaviour
+import org.soyuz.kcraft.computer.ComputerBlock
 import org.soyuz.kcraft.util.key
 
 object KCraftBlocks {
@@ -45,6 +46,12 @@ object KCraftBlocks {
         "ruby_block",
         ::Block,
         BlockBehaviour.Properties.of().sound(SoundType.IRON)
+    )
+
+    val COMPUTER_BLOCK = register(
+        "computer_block",
+        ::ComputerBlock,
+        BlockBehaviour.Properties.of()
     )
 
 

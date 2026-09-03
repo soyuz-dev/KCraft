@@ -5,17 +5,16 @@ import net.minecraft.resources.Identifier
 import org.slf4j.LoggerFactory
 
 object KCraft : ModInitializer {
-    const val MOD_ID: String = "kcraft"
+    const val MOD_ID: String = "assets/kcraft"
 
     val LOGGER = LoggerFactory.getLogger(MOD_ID)
 
     override fun onInitialize() {
         KCraftItems.initialize()
         KCraftBlocks.initialize()
+        KCraftBlockEntities.initialize()
         LOGGER.info("KCraft Initialised")
     }
 
     fun id(path: String): Identifier = Identifier.fromNamespaceAndPath(MOD_ID, path)
-
-
 }
