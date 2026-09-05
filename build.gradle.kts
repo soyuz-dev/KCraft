@@ -46,11 +46,17 @@ repositories {
     // Add repositories here if needed
 }
 
+tasks.test {
+    useJUnitPlatform()
+}
+
 dependencies {
     minecraft("com.mojang:minecraft:$minecraftVersion")
     implementation("net.fabricmc:fabric-loader:$loaderVersion")
     implementation("net.fabricmc:fabric-language-kotlin:$kotlinLoaderVersion")
     implementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testImplementation("org.jetbrains.kotlin:kotlin-test")
 }
 
 tasks.processResources {

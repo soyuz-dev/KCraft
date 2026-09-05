@@ -59,6 +59,10 @@ object KCraftBlocks {
             .register(CreativeModeTabEvents.ModifyOutput {
                 it.accept(RUBY_BLOCK.asItem())
             })
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS)
+            .register(CreativeModeTabEvents.ModifyOutput {
+                it.accept(COMPUTER_BLOCK.asItem())
+            })
     }
 
 }
