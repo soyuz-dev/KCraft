@@ -1,10 +1,10 @@
-package org.soyuz.kcraft.computer.terminal
+package org.soyuz.kcraft.computer
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.util.Scanner
+import org.soyuz.kcraft.computer.Terminal
 
 class TerminalTest {
 

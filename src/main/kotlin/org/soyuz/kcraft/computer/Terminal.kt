@@ -1,4 +1,4 @@
-package org.soyuz.kcraft.computer.terminal
+package org.soyuz.kcraft.computer
 
 class Terminal {
 

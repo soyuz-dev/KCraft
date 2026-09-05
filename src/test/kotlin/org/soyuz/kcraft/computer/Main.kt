@@ -1,5 +1,6 @@
-package org.soyuz.kcraft.computer.terminal
+package org.soyuz.kcraft.computer
 
+import org.soyuz.kcraft.computer.Terminal
 import java.util.Scanner
 
 fun main() {
