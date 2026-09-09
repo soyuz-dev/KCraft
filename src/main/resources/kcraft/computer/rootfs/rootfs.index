@@ -1,0 +1,5 @@
+bin/help.ksh
+bin/version.ksh
+bin/uptime.ksh
+bin/whoami.ksh
+etc/shell.kshrc
