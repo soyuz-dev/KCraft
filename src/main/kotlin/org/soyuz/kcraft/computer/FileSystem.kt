@@ -2,7 +2,10 @@ package org.soyuz.kcraft.computer
 
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
+import kotlin.io.path.createDirectory
+import kotlin.io.path.createFile
 import kotlin.io.path.exists
+import kotlin.io.path.isDirectory
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.outputStream
 import kotlin.io.path.readText
@@ -47,6 +50,9 @@ class FileSystem(
         resolve(path)
             .listDirectoryEntries()
             .map { it.fileName.toString() }
+
+    fun isDirectory(path: String): Boolean =
+        resolve(path).isDirectory()
 
     private fun populateRootFs() {
         val classLoader = javaClass.classLoader
@@ -102,5 +108,69 @@ class FileSystem(
         return resolved
     }
 
+    fun normalizePath(
+        workingDirectory: String,
+        path: String
+    ): String {
+        val combined = if (path.startsWith("/")) {
+            path
+        } else {
+            "$workingDirectory/$path"
+        }
+        val parts = mutableListOf<String>()
+
+        for (part in combined.split('/')) {
+            when (part) {
+                "", "." -> Unit
+
+                ".." -> {
+                    if (parts.isNotEmpty()) {
+                        parts.removeLast()
+                    }
+                }
+                else -> parts += part
+            }
+        }
+        return "/" + parts.joinToString("/")
+    }
+
+    fun createFile(path: String) {
+        val file = resolve(path)
+        val parent = file.parent
+
+        require(parent != null && parent.exists()) {
+            "Parent directory does not exist: $path"
+        }
+
+        require(parent.isDirectory()) {
+            "Parent is not a directory: $path"
+        }
+
+        if (!file.exists()) {
+            require(!file.isDirectory()) {
+                "Is a directory: $path"
+            }
+            file.createFile()
+        }
+    }
+
+    fun createDirectory(path: String) {
+        val directory = resolve(path)
+        val parent = directory.parent
+
+        require(parent != null && parent.exists()) {
+            "Parent directory does not exist: $path"
+        }
+
+        require(parent.isDirectory()) {
+            "Parent is not a directory: $path"
+        }
+
+        require(!directory.exists()) {
+            "File or directory already exists: $path"
+        }
+
+        directory.createDirectory()
+    }
 
 }

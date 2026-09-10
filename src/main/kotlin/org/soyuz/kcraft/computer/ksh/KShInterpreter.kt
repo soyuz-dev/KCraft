@@ -1,12 +1,16 @@
 package org.soyuz.kcraft.computer.ksh
 
-import org.soyuz.kcraft.computer.FileSystem
-import org.soyuz.kcraft.computer.Terminal
+import org.soyuz.kcraft.computer.ComputerRuntime
 
 class KShInterpreter(
-    private val terminal: Terminal,
-    private val fileSystem: FileSystem
+    private val runtime: ComputerRuntime
 ) {
+
+    private val terminal
+        get() = runtime.terminal
+
+    private val fileSystem
+        get() = runtime.fileSystem
 
     companion object {
         private const val MAX_SOURCE_DEPTH = 16
@@ -28,6 +32,10 @@ class KShInterpreter(
             "echo" -> echo(args)
             "clear" -> clear(args)
             "source" -> source(args, sourceDepth)
+            "touch" -> touch(args)
+            "mkdir" -> mkdir(args)
+            "cd" -> cd(args)
+            "pwd" -> pwd(args)
 
             else -> terminal.appendLine(
                 "ksh: command not found: $command"
@@ -74,5 +82,76 @@ class KShInterpreter(
             .forEach { line ->
                 executeLine(line, depth + 1)
             }
+    }
+
+    private fun touch(args: List<String>) {
+        if (args.size != 1) {
+            terminal.appendLine("touch: expected one path")
+            return
+        }
+
+        val path = fileSystem.normalizePath(
+            runtime.workingDirectory,
+            args.single()
+        )
+
+        try {
+            fileSystem.createFile(path)
+        } catch (e: IllegalArgumentException) {
+            terminal.appendLine("touch: ${e.message}")
+        }
+    }
+
+    private fun mkdir(args: List<String>) {
+        if (args.size != 1) {
+            terminal.appendLine("mkdir: expected one path")
+            return
+        }
+
+        val path = fileSystem.normalizePath(
+            runtime.workingDirectory,
+            args.single()
+        )
+
+        try {
+            fileSystem.createDirectory(path)
+        } catch (e: IllegalArgumentException) {
+            terminal.appendLine("mkdir: ${e.message}")
+        }
+    }
+
+    private fun cd(args: List<String>) {
+        if (args.size != 1) {
+            terminal.appendLine("cd: expected one path")
+            return
+        }
+
+        val target = args.single()
+
+        val normalized = fileSystem.normalizePath(
+            runtime.workingDirectory,
+            target
+        )
+
+        if (!fileSystem.exists(normalized)) {
+            terminal.appendLine("cd: no such file or directory: $target")
+            return
+        }
+
+        if (!fileSystem.isDirectory(normalized)) {
+            terminal.appendLine("cd: not a directory: $target")
+            return
+        }
+
+        runtime.changeDirectory(target)
+    }
+
+    private fun pwd(args: List<String>) {
+        if (args.isNotEmpty()) {
+            terminal.appendLine("pwd: expected no arguments")
+            return
+        }
+
+        terminal.appendLine(runtime.workingDirectory)
     }
 }
