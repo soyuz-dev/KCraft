@@ -1,6 +1,7 @@
 package org.soyuz.kcraft.computer
 
 import org.soyuz.kcraft.computer.ksh.KShEnvironment
+import org.soyuz.kcraft.computer.ksh.KShInterpreter
 
 class ComputerRuntime(
     val terminal: Terminal,
@@ -12,10 +13,25 @@ class ComputerRuntime(
     var uptimeTicks = 0L
         private set
 
+    private var booted = false
+
     val environment = KShEnvironment(this)
 
+    val interpreter = KShInterpreter(this)
+
     fun tick() {
+        if(!booted) return
         uptimeTicks++
+    }
+
+    fun boot() {
+        if (booted) return
+
+        booted = true
+
+        if (fileSystem.exists("/etc/shell.kshrc")) {
+            interpreter.executeLine("source /etc/shell.kshrc")
+        }
     }
 
 
@@ -38,6 +54,6 @@ class ComputerRuntime(
     }
 
     fun openNano(path: String) {
-        // later: switch runtime/screen mode
+        // later: switch runtime/screen mode or some other abstraction
     }
 }
