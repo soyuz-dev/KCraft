@@ -3,6 +3,7 @@ package org.soyuz.kcraft
 import net.fabricmc.api.ModInitializer
 import net.minecraft.resources.Identifier
 import org.slf4j.LoggerFactory
+import org.soyuz.kcraft.network.KCraftPackets
 
 class KCraft : ModInitializer {
     companion object {
@@ -17,6 +18,8 @@ class KCraft : ModInitializer {
         KCraftItems.initialize()
         KCraftBlocks.initialize()
         KCraftBlockEntities.initialize()
+        KCraftPackets.initialize()
+        KCraftMenus.initialize()
         LOGGER.info("KCraft Initialised")
     }
 

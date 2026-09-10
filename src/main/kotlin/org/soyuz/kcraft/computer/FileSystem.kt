@@ -1,6 +1,7 @@
 package org.soyuz.kcraft.computer
 
 import java.nio.file.Path
+import java.util.UUID
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createDirectory
 import kotlin.io.path.createFile
@@ -12,7 +13,7 @@ import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
 class FileSystem(
-    val root: Path
+    root: Path
 ) {
     companion object {
         private const val ROOTFS_RESOURCE =
@@ -22,10 +23,32 @@ class FileSystem(
             "$ROOTFS_RESOURCE/rootfs.index"
     }
 
-    init {
-        root.createDirectories()
+    val root: Path =
+        root.toAbsolutePath().normalize()
 
-        if (root.listDirectoryEntries().isEmpty()) {
+    /**
+     * Creates a filesystem for one KCraft computer inside
+     * a world's storage directory.
+     *
+     * <world>/
+     * └── kcraft/
+     *     └── computers/
+     *         └── <uuid>/
+     */
+    constructor(
+        worldRoot: Path,
+        computerId: UUID
+    ) : this(
+        worldRoot
+            .resolve("kcraft")
+            .resolve("computers")
+            .resolve(computerId.toString())
+    )
+
+    init {
+        this.root.createDirectories()
+
+        if (this.root.listDirectoryEntries().isEmpty()) {
             populateRootFs()
         }
     }
@@ -46,13 +69,85 @@ class FileSystem(
     fun exists(path: String): Boolean =
         resolve(path).exists()
 
+    fun isDirectory(path: String): Boolean =
+        resolve(path).isDirectory()
+
     fun list(path: String): List<String> =
         resolve(path)
             .listDirectoryEntries()
             .map { it.fileName.toString() }
 
-    fun isDirectory(path: String): Boolean =
-        resolve(path).isDirectory()
+    fun createFile(path: String) {
+        val file = resolve(path)
+        val parent = file.parent
+
+        require(parent != null && parent.exists()) {
+            "Parent directory does not exist: $path"
+        }
+
+        require(parent.isDirectory()) {
+            "Parent is not a directory: $path"
+        }
+
+        if (file.exists()) {
+            require(!file.isDirectory()) {
+                "Is a directory: $path"
+            }
+
+            // Existing ordinary file: touch does nothing for now.
+            return
+        }
+
+        file.createFile()
+    }
+
+    fun createDirectory(path: String) {
+        val directory = resolve(path)
+        val parent = directory.parent
+
+        require(parent != null && parent.exists()) {
+            "Parent directory does not exist: $path"
+        }
+
+        require(parent.isDirectory()) {
+            "Parent is not a directory: $path"
+        }
+
+        require(!directory.exists()) {
+            "File or directory already exists: $path"
+        }
+
+        directory.createDirectory()
+    }
+
+    fun normalizePath(
+        workingDirectory: String,
+        path: String
+    ): String {
+        val combined = if (path.startsWith("/")) {
+            path
+        } else {
+            "$workingDirectory/$path"
+        }
+
+        val parts = mutableListOf<String>()
+
+        for (part in combined.split('/')) {
+            when (part) {
+                "", "." -> Unit
+
+                ".." -> {
+                    if (parts.isNotEmpty()) {
+                        parts.removeLast()
+                    }
+                }
+
+                else -> parts += part
+            }
+        }
+
+        return "/" + parts.joinToString("/")
+    }
 
     private fun populateRootFs() {
         createBaseDirectories()
@@ -61,7 +156,9 @@ class FileSystem(
 
         val index = classLoader
             .getResourceAsStream(ROOTFS_INDEX)
-            ?: error("Missing KCraft rootfs index: $ROOTFS_INDEX")
+            ?: error(
+                "Missing KCraft rootfs index: $ROOTFS_INDEX"
+            )
 
         val files = index.bufferedReader().useLines { lines ->
             lines
@@ -94,7 +191,9 @@ class FileSystem(
 
         val input = javaClass.classLoader
             .getResourceAsStream(resourcePath)
-            ?: error("Missing KCraft rootfs file: $resourcePath")
+            ?: error(
+                "Missing KCraft rootfs file: $resourcePath"
+            )
 
         val destination = resolve(relativePath)
 
@@ -108,83 +207,14 @@ class FileSystem(
     }
 
     private fun resolve(path: String): Path {
-        val normalizedRoot =
-            root.toAbsolutePath().normalize()
-
-        val resolved = normalizedRoot
+        val resolved = root
             .resolve(path.removePrefix("/"))
             .normalize()
 
-        require(resolved.startsWith(normalizedRoot)) {
+        require(resolved.startsWith(root)) {
             "Path escapes filesystem root: $path"
         }
 
         return resolved
     }
-
-    fun normalizePath(
-        workingDirectory: String,
-        path: String
-    ): String {
-        val combined = if (path.startsWith("/")) {
-            path
-        } else {
-            "$workingDirectory/$path"
-        }
-        val parts = mutableListOf<String>()
-
-        for (part in combined.split('/')) {
-            when (part) {
-                "", "." -> Unit
-
-                ".." -> {
-                    if (parts.isNotEmpty()) {
-                        parts.removeLast()
-                    }
-                }
-                else -> parts += part
-            }
-        }
-        return "/" + parts.joinToString("/")
-    }
-
-    fun createFile(path: String) {
-        val file = resolve(path)
-        val parent = file.parent
-
-        require(parent != null && parent.exists()) {
-            "Parent directory does not exist: $path"
-        }
-
-        require(parent.isDirectory()) {
-            "Parent is not a directory: $path"
-        }
-
-        if (!file.exists()) {
-            require(!file.isDirectory()) {
-                "Is a directory: $path"
-            }
-            file.createFile()
-        }
-    }
-
-    fun createDirectory(path: String) {
-        val directory = resolve(path)
-        val parent = directory.parent
-
-        require(parent != null && parent.exists()) {
-            "Parent directory does not exist: $path"
-        }
-
-        require(parent.isDirectory()) {
-            "Parent is not a directory: $path"
-        }
-
-        require(!directory.exists()) {
-            "File or directory already exists: $path"
-        }
-
-        directory.createDirectory()
-    }
-
 }

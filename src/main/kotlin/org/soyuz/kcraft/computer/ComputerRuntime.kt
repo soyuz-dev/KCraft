@@ -53,6 +53,14 @@ class ComputerRuntime(
         return true
     }
 
+    fun submitCurrentCommand() {
+        val command = terminal.commitInput().trim()
+
+        if (command.isNotEmpty()) {
+            interpreter.executeLine(command)
+        }
+    }
+
     fun openNano(path: String) {
         // later: switch runtime/screen mode or some other abstraction
     }
