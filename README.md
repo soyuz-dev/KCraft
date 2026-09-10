@@ -153,6 +153,6 @@ APIs, filesystem formats, scripts, recipes, world data, and basically anything e
 
 Do not entrust KCraft with the only copy of anything important.
 
-## Licence
+## License
 
-[Add current licence here]
+MPL 2.0
