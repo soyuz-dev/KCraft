@@ -26,7 +26,9 @@ class KShInterpreter(
         if (tokens.isEmpty()) return
 
         val command = tokens.first().value
-        val args = tokens.drop(1).map { it.value }
+        val args = tokens
+            .drop(1)
+            .map { expand(it.value) }
 
         when (command) {
             "echo" -> echo(args)
@@ -153,5 +155,15 @@ class KShInterpreter(
         }
 
         terminal.appendLine(runtime.workingDirectory)
+    }
+
+    private fun expand(value: String): String {
+        if (!value.startsWith("$")) {
+            return value
+        }
+
+        val name = value.drop(1)
+
+        return runtime.environment.get(name) ?: ""
     }
 }

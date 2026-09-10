@@ -1,11 +1,22 @@
 package org.soyuz.kcraft.computer
 
+import org.soyuz.kcraft.computer.ksh.KShEnvironment
+
 class ComputerRuntime(
     val terminal: Terminal,
     val fileSystem: FileSystem
 ) {
     var workingDirectory: String = "/"
         private set
+
+    var uptimeTicks = 0L
+        private set
+
+    val environment = KShEnvironment(this)
+
+    fun tick() {
+        uptimeTicks++
+    }
 
 
     fun changeDirectory(path: String): Boolean {
