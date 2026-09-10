@@ -55,6 +55,8 @@ class FileSystem(
         resolve(path).isDirectory()
 
     private fun populateRootFs() {
+        createBaseDirectories()
+
         val classLoader = javaClass.classLoader
 
         val index = classLoader
@@ -71,6 +73,18 @@ class FileSystem(
 
         for (relativePath in files) {
             copyRootFsFile(relativePath)
+        }
+    }
+
+    private fun createBaseDirectories() {
+        listOf(
+            "/bin",
+            "/etc",
+            "/home",
+            "/tmp",
+            "/dev"
+        ).forEach { path ->
+            resolve(path).createDirectories()
         }
     }
 
