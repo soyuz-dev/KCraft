@@ -66,6 +66,23 @@ class FileSystem(
         file.writeText(content)
     }
 
+    fun appendFile(
+        path: String,
+        content: String
+    ) {
+        val file = resolve(path)
+
+        require(file.exists()) {
+            "File does not exist: $path"
+        }
+
+        require(!file.isDirectory()) {
+            "Is a directory: $path"
+        }
+
+        file.toFile().appendText(content)
+    }
+
     fun exists(path: String): Boolean =
         resolve(path).exists()
 

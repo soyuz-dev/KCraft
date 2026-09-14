@@ -38,6 +38,9 @@ class KShInterpreter(
             "mkdir" -> mkdir(args)
             "cd" -> cd(args)
             "pwd" -> pwd(args)
+            "append" -> append(args)
+            "appendln" -> append(args, newline = true)
+
 
             else -> terminal.appendLine(
                 "ksh: command not found: $command"
@@ -155,6 +158,34 @@ class KShInterpreter(
         }
 
         terminal.appendLine(runtime.workingDirectory)
+    }
+
+    private fun append(
+        args: List<String>,
+        newline: Boolean = false
+    ) {
+        if (args.size < 2) {
+            terminal.appendLine(
+                "append: expected path and text"
+            )
+            return
+        }
+
+        val path = fileSystem.normalizePath(
+            runtime.workingDirectory,
+            args.first()
+        )
+
+        val text = args
+            .drop(1)
+            .joinToString(" ")
+            .let { if (newline) "$it\n" else it }
+
+        try {
+            fileSystem.appendFile(path, text)
+        } catch (e: IllegalArgumentException) {
+            terminal.appendLine("append: ${e.message}")
+        }
     }
 
     private fun expand(value: String): String {
