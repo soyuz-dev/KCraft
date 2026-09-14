@@ -5,15 +5,15 @@ import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import org.soyuz.kcraft.util.packet
 
-data object RequestTerminalStatePayload : CustomPacketPayload {
+data object RequestComputerDisplayStatePayload : CustomPacketPayload {
 
     val TYPE =
-            CustomPacketPayload.Type<RequestTerminalStatePayload>(
+            CustomPacketPayload.Type<RequestComputerDisplayStatePayload>(
                 packet("terminal/request_state")
             )
 
-    val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, RequestTerminalStatePayload> =
-            StreamCodec.unit(RequestTerminalStatePayload)
+    val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, RequestComputerDisplayStatePayload> =
+            StreamCodec.unit(RequestComputerDisplayStatePayload)
 
 
     override fun type() = TYPE

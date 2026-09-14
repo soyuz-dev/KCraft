@@ -15,8 +15,7 @@ import net.minecraft.world.level.storage.LevelResource
 import net.minecraft.world.level.storage.ValueInput
 import net.minecraft.world.level.storage.ValueOutput
 import org.soyuz.kcraft.KCraftBlockEntities
-import org.soyuz.kcraft.network.c2s.TerminalInputPayload
-import org.soyuz.kcraft.network.s2c.TerminalStatePayload
+import org.soyuz.kcraft.network.s2c.ComputerDisplayStatePayload
 import java.util.UUID
 
 class ComputerBlockEntity(
@@ -35,6 +34,9 @@ class ComputerBlockEntity(
 
     fun removeViewer(player: ServerPlayer) =
         viewers.remove(player)
+
+    fun isViewer(player: ServerPlayer) =
+        viewers.contains(player)
 
 
     var computerId: UUID = UUID.randomUUID()
@@ -116,11 +118,11 @@ class ComputerBlockEntity(
         )
     }
 
-    fun syncTerminal(player: ServerPlayer) {
+    fun syncDisplay(player: ServerPlayer) {
         val terminal = runtime.terminal
         val cursor = terminal.visibleCursorPosition
 
-        val payload = TerminalStatePayload(
+        val payload = ComputerDisplayStatePayload(
             terminal.visibleLines.toList(),
             cursor?.row ?: -1,
             cursor?.column ?: -1
@@ -129,36 +131,8 @@ class ComputerBlockEntity(
         ServerPlayNetworking.send(player, payload)
     }
 
-    fun syncTerminal() {
-        viewers.forEach(::syncTerminal)
+    fun syncDisplay() {
+        viewers.forEach(::syncDisplay)
     }
 
-    fun handleInput(
-        player: ServerPlayer,
-        payload: TerminalInputPayload
-    ) {
-        if (player !in viewers) return
-
-        when (payload.type) {
-            TerminalInputPayload.Type.CHARACTER -> {
-                Character.toChars(payload.character)
-                    .concatToString()
-                    .forEach(runtime.terminal::appendChar)
-            }
-
-            TerminalInputPayload.Type.BACKSPACE ->
-                runtime.terminal.popChar()
-
-            TerminalInputPayload.Type.ENTER ->
-                runtime.submitCurrentCommand()
-
-            TerminalInputPayload.Type.SCROLL_UP ->
-                runtime.terminal.scrollUp()
-
-            TerminalInputPayload.Type.SCROLL_DOWN ->
-                runtime.terminal.scrollDown()
-        }
-
-        syncTerminal()
-    }
 }

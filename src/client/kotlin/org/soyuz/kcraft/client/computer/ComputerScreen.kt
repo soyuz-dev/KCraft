@@ -11,8 +11,8 @@ import net.minecraft.world.entity.player.Inventory
 import org.lwjgl.glfw.GLFW
 import org.soyuz.kcraft.computer.ComputerMenu
 import org.soyuz.kcraft.computer.Terminal
-import org.soyuz.kcraft.network.c2s.RequestTerminalStatePayload
-import org.soyuz.kcraft.network.c2s.TerminalInputPayload
+import org.soyuz.kcraft.network.c2s.RequestComputerDisplayStatePayload
+import org.soyuz.kcraft.network.c2s.ComputerInputPayload
 
 class ComputerScreen(
     menu: ComputerMenu,
@@ -26,7 +26,7 @@ class ComputerScreen(
 
     init {
         ClientPlayNetworking.send(
-            RequestTerminalStatePayload
+            RequestComputerDisplayStatePayload
         )
     }
 
@@ -48,8 +48,8 @@ class ComputerScreen(
 
     override fun charTyped(event: CharacterEvent): Boolean {
         ClientPlayNetworking.send(
-            TerminalInputPayload(
-                type = TerminalInputPayload.Type.CHARACTER,
+            ComputerInputPayload(
+                type = ComputerInputPayload.Type.CHARACTER,
                 character = event.codepoint
             )
         )
@@ -61,8 +61,8 @@ class ComputerScreen(
         when (event.key) {
             GLFW.GLFW_KEY_ENTER -> {
                 ClientPlayNetworking.send(
-                    TerminalInputPayload(
-                        TerminalInputPayload.Type.ENTER
+                    ComputerInputPayload(
+                        ComputerInputPayload.Type.ENTER
                     )
                 )
                 return true
@@ -70,8 +70,8 @@ class ComputerScreen(
 
             GLFW.GLFW_KEY_BACKSPACE -> {
                 ClientPlayNetworking.send(
-                    TerminalInputPayload(
-                        TerminalInputPayload.Type.BACKSPACE
+                    ComputerInputPayload(
+                        ComputerInputPayload.Type.BACKSPACE
                     )
                 )
                 return true
@@ -79,8 +79,8 @@ class ComputerScreen(
 
             GLFW.GLFW_KEY_UP -> {
                 ClientPlayNetworking.send(
-                    TerminalInputPayload(
-                        TerminalInputPayload.Type.SCROLL_UP
+                    ComputerInputPayload(
+                        ComputerInputPayload.Type.SCROLL_UP
                     )
                 )
                 return true
@@ -88,8 +88,8 @@ class ComputerScreen(
 
             GLFW.GLFW_KEY_DOWN -> {
                 ClientPlayNetworking.send(
-                    TerminalInputPayload(
-                        TerminalInputPayload.Type.SCROLL_DOWN
+                    ComputerInputPayload(
+                        ComputerInputPayload.Type.SCROLL_DOWN
                     )
                 )
                 return true

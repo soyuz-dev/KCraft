@@ -1,6 +1,6 @@
 package org.soyuz.kcraft.computer
 
-class Terminal {
+class Terminal : ComputerMode {
 
     companion object {
         const val VISIBLE_LINES = 12
@@ -283,4 +283,48 @@ class Terminal {
                 maxScrollOffset()
             )
     }
+
+    override fun handleInput(
+        input: ComputerInput,
+        runtime: ComputerRuntime
+    ) {
+        when (input) {
+            is ComputerInput.Character -> {
+                Character.toChars(input.codepoint)
+                    .concatToString()
+                    .forEach(::appendChar)
+            }
+
+            ComputerInput.Backspace ->
+                popChar()
+
+            ComputerInput.Enter ->
+                runtime.submitCurrentCommand()
+
+            ComputerInput.Up ->
+                scrollUp()
+
+            ComputerInput.Down ->
+                scrollDown()
+
+            ComputerInput.Left ->
+                moveCursorLeft()
+
+            ComputerInput.Right ->
+                moveCursorRight()
+
+            else -> Unit
+        }
+    }
+
+    override fun displayState(): ComputerDisplayState {
+        val cursor = visibleCursorPosition
+
+        return ComputerDisplayState(
+            lines = visibleLines.toList(),
+            cursorRow = cursor?.row,
+            cursorColumn = cursor?.column
+        )
+    }
+
 }

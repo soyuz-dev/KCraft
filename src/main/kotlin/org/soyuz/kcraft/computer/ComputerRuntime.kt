@@ -7,6 +7,10 @@ class ComputerRuntime(
     val terminal: Terminal,
     val fileSystem: FileSystem
 ) {
+
+    var activeMode: ComputerMode = terminal
+        private set
+
     var workingDirectory: String = "/"
         private set
 
@@ -16,11 +20,10 @@ class ComputerRuntime(
     private var booted = false
 
     val environment = KShEnvironment(this)
-
     val interpreter = KShInterpreter(this)
 
     fun tick() {
-        if(!booted) return
+        if (!booted) return
         uptimeTicks++
     }
 
@@ -30,10 +33,31 @@ class ComputerRuntime(
         booted = true
 
         if (fileSystem.exists("/etc/shell.kshrc")) {
-            interpreter.executeLine("source /etc/shell.kshrc")
+            interpreter.executeLine(
+                "source /etc/shell.kshrc"
+            )
         }
     }
 
+    fun handleInput(input: ComputerInput) {
+        activeMode.handleInput(
+            input,
+            this
+        )
+    }
+
+    fun displayState(): ComputerDisplayState =
+        activeMode.displayState()
+
+    fun submitCurrentCommand() {
+        val command = terminal
+            .commitInput()
+            .trim()
+
+        if (command.isNotEmpty()) {
+            interpreter.executeLine(command)
+        }
+    }
 
     fun changeDirectory(path: String): Boolean {
         val normalized = fileSystem.normalizePath(
@@ -41,27 +65,43 @@ class ComputerRuntime(
             path
         )
 
-        if (!fileSystem.exists(normalized)) {
-            return false
-        }
-
-        if (!fileSystem.isDirectory(normalized)) {
-            return false
-        }
+        if (!fileSystem.exists(normalized)) return false
+        if (!fileSystem.isDirectory(normalized)) return false
 
         workingDirectory = normalized
         return true
     }
 
-    fun submitCurrentCommand() {
-        val command = terminal.commitInput().trim()
+    fun openNano(path: String) {
+        val normalized = fileSystem.normalizePath(
+            workingDirectory,
+            path
+        )
 
-        if (command.isNotEmpty()) {
-            interpreter.executeLine(command)
+        if (
+            fileSystem.exists(normalized) &&
+            fileSystem.isDirectory(normalized)
+        ) {
+            terminal.appendLine(
+                "nano: is a directory: $path"
+            )
+            return
         }
+
+        val contents =
+            if (fileSystem.exists(normalized)) {
+                fileSystem.readFile(normalized)
+            } else {
+                ""
+            }
+
+        activeMode = NanoMode(
+            path = normalized,
+            contents = contents
+        )
     }
 
-    fun openNano(path: String) {
-        // later: switch runtime/screen mode or some other abstraction
+    fun returnToTerminal() {
+        activeMode = terminal
     }
 }

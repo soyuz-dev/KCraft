@@ -8,7 +8,7 @@ import net.minecraft.resources.Identifier
 import org.soyuz.kcraft.KCraft
 import org.soyuz.kcraft.computer.Terminal
 
-data class TerminalStatePayload(
+data class ComputerDisplayStatePayload(
     val lines: List<String>,
     val cursorRow: Int,
     val cursorColumn: Int
@@ -16,7 +16,7 @@ data class TerminalStatePayload(
 
     companion object {
         val TYPE =
-            CustomPacketPayload.Type<TerminalStatePayload>(
+            CustomPacketPayload.Type<ComputerDisplayStatePayload>(
                 Identifier.fromNamespaceAndPath(
                     KCraft.MOD_ID,
                     "terminal/state"
@@ -33,18 +33,18 @@ data class TerminalStatePayload(
                 )
 
         val STREAM_CODEC:
-                StreamCodec<RegistryFriendlyByteBuf, TerminalStatePayload> =
+                StreamCodec<RegistryFriendlyByteBuf, ComputerDisplayStatePayload> =
             StreamCodec.composite(
                 LINES_CODEC,
-                TerminalStatePayload::lines,
+                ComputerDisplayStatePayload::lines,
 
                 ByteBufCodecs.VAR_INT,
-                TerminalStatePayload::cursorRow,
+                ComputerDisplayStatePayload::cursorRow,
 
                 ByteBufCodecs.VAR_INT,
-                TerminalStatePayload::cursorColumn,
+                ComputerDisplayStatePayload::cursorColumn,
 
-                ::TerminalStatePayload
+                ::ComputerDisplayStatePayload
             )
     }
 

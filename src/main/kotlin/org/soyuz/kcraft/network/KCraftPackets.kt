@@ -3,20 +3,20 @@ package org.soyuz.kcraft.network
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import org.soyuz.kcraft.computer.ComputerMenu
-import org.soyuz.kcraft.network.c2s.RequestTerminalStatePayload
-import org.soyuz.kcraft.network.c2s.TerminalInputPayload
-import org.soyuz.kcraft.network.s2c.TerminalStatePayload
+import org.soyuz.kcraft.network.c2s.RequestComputerDisplayStatePayload
+import org.soyuz.kcraft.network.c2s.ComputerInputPayload
+import org.soyuz.kcraft.network.c2s.toComputerInput
+import org.soyuz.kcraft.network.s2c.ComputerDisplayStatePayload
 
 object KCraftPackets {
     fun initialize() {
-        PayloadTypeRegistry.clientboundPlay().register(TerminalStatePayload.TYPE, TerminalStatePayload.STREAM_CODEC)
-        PayloadTypeRegistry.serverboundPlay().register(TerminalInputPayload.TYPE, TerminalInputPayload.STREAM_CODEC)
-        PayloadTypeRegistry.serverboundPlay().register(RequestTerminalStatePayload.TYPE,RequestTerminalStatePayload.STREAM_CODEC)
+        PayloadTypeRegistry.clientboundPlay().register(ComputerDisplayStatePayload.TYPE, ComputerDisplayStatePayload.STREAM_CODEC)
+        PayloadTypeRegistry.serverboundPlay().register(ComputerInputPayload.TYPE, ComputerInputPayload.STREAM_CODEC)
+        PayloadTypeRegistry.serverboundPlay().register(RequestComputerDisplayStatePayload.TYPE,RequestComputerDisplayStatePayload.STREAM_CODEC)
 
         ServerPlayNetworking.registerGlobalReceiver(
-            TerminalInputPayload.TYPE
+            ComputerInputPayload.TYPE
         ) { payload, context ->
-
             val player = context.player()
 
             val menu = player.containerMenu as? ComputerMenu
@@ -25,14 +25,19 @@ object KCraftPackets {
             val computer = menu.computer
                 ?: return@registerGlobalReceiver
 
-            computer.handleInput(
-                player,
-                payload
+            if (!computer.isViewer(player)) {
+                return@registerGlobalReceiver
+            }
+
+            computer.runtime.handleInput(
+                payload.toComputerInput()
             )
+
+            computer.syncDisplay()
         }
 
         ServerPlayNetworking.registerGlobalReceiver(
-            RequestTerminalStatePayload.TYPE
+            RequestComputerDisplayStatePayload.TYPE
         ) { _, context ->
             val player = context.player()
 
@@ -42,7 +47,7 @@ object KCraftPackets {
             val computer = menu.computer
                 ?: return@registerGlobalReceiver
 
-            computer.syncTerminal(player)
+            computer.syncDisplay(player)
         }
     }
 }
