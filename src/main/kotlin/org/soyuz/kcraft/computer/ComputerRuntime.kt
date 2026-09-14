@@ -95,7 +95,7 @@ class ComputerRuntime(
                 ""
             }
 
-        activeMode = NanoMode(
+        activeMode = PicoMode(
             path = normalized,
             contents = contents
         )

@@ -1,6 +1,6 @@
 package org.soyuz.kcraft.computer
 
-class NanoMode(
+class PicoMode(
     val path: String,
     private var contents: String
 ) : ComputerMode {
