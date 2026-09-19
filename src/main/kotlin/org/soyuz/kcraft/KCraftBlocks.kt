@@ -10,6 +10,8 @@ import net.minecraft.world.item.Item
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.SoundType
 import net.minecraft.world.level.block.state.BlockBehaviour
+import net.minecraft.world.level.material.MapColor
+import org.soyuz.kcraft.block.RubyOreBlock
 import org.soyuz.kcraft.computer.ComputerBlock
 import org.soyuz.kcraft.util.key
 
@@ -54,6 +56,17 @@ object KCraftBlocks {
         BlockBehaviour.Properties.of()
     )
 
+    val RUBY_ORE = register(
+        "ruby_ore",
+        ::RubyOreBlock,
+        BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_BLACK)
+            .requiresCorrectToolForDrops()
+            .strength(3.0f, 3.0f)
+            .sound(SoundType.GILDED_BLACKSTONE),
+        true
+    )
+
     fun initialize() {
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.BUILDING_BLOCKS)
             .register(CreativeModeTabEvents.ModifyOutput {
@@ -62,6 +75,11 @@ object KCraftBlocks {
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS)
             .register(CreativeModeTabEvents.ModifyOutput {
                 it.accept(COMPUTER_BLOCK.asItem())
+            })
+
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.NATURAL_BLOCKS)
+            .register(CreativeModeTabEvents.ModifyOutput {
+                it.accept(RUBY_ORE.asItem())
             })
     }
 
