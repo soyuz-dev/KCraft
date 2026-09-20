@@ -51,7 +51,7 @@ Craft a Computer
 Start programming
 ```
 
-Ruby Ore generation is currently under development.
+Ruby Ore generates naturally in the Nether by replacing blackstone. Generation is intentionally limited to small veins, so finding blackstone-rich areas is an important part of obtaining rubies in survival mode.
 
 ## KSh
 
