@@ -16,6 +16,27 @@ class KShInterpreter(
         private const val MAX_SOURCE_DEPTH = 16
     }
 
+    private val commandDescriptions = mapOf(
+        "echo" to "Print text to the terminal",
+        "clear" to "Clear the terminal",
+        "source" to "Execute a KSh script",
+
+        "pwd" to "Print the current working directory",
+        "cd" to "Change the working directory",
+        "ls" to "List files in a directory",
+        "cat" to "Print a file",
+
+        "touch" to "Create a file",
+        "mkdir" to "Create a directory",
+        "rmdir" to "Remove an empty directory",
+        "rm" to "Remove a file",
+
+        "append" to "Append text to a file",
+        "appendln" to "Append a line to a file",
+
+        "pico" to "Edit a file with Pico"
+    )
+
     fun executeLine(source: String) {
         executeLine(source, 0)
     }
@@ -49,6 +70,8 @@ class KShInterpreter(
             "rmdir" -> rmdir(args)
 
             "pico" -> pico(args)
+
+            "help" -> help(args)
 
 
             else -> terminal.appendLine(
@@ -327,5 +350,42 @@ class KShInterpreter(
         fileSystem.readFile(path)
             .lineSequence()
             .forEach(terminal::appendLine)
+    }
+
+    private fun help(args: List<String>) {
+        when (args.size) {
+            0 -> {
+                terminal.appendLine("KSh commands:")
+
+                commandDescriptions.keys
+                    .sorted()
+                    .forEach { command ->
+                        terminal.appendLine(
+                            "$command - ${commandDescriptions.getValue(command)}"
+                        )
+                    }
+            }
+
+            1 -> {
+                val command = args.single()
+                val description = commandDescriptions[command]
+
+                if (description == null) {
+                    terminal.appendLine(
+                        "help: no such command: $command"
+                    )
+                    return
+                }
+
+                terminal.appendLine(
+                    "$command - $description"
+                )
+            }
+
+            else ->
+                terminal.appendLine(
+                    "help: expected at most one command"
+                )
+        }
     }
 }
