@@ -69,21 +69,40 @@ class KShInterpreter(
 
         terminal.clear()
     }
-
-    private fun source(args: List<String>, depth: Int) {
+    private fun source(
+        args: List<String>,
+        depth: Int
+    ) {
         if (args.size != 1) {
-            terminal.appendLine("source: expected exactly one path")
-            return
-        }
-        if (depth > MAX_SOURCE_DEPTH) {
-            terminal.appendLine("source: drowning in the depths")
+            terminal.appendLine(
+                "source: expected exactly one path"
+            )
             return
         }
 
-        val path = args.single()
+        if (depth >= MAX_SOURCE_DEPTH) {
+            terminal.appendLine(
+                "source: drowning in the depths"
+            )
+            return
+        }
+
+        val path = fileSystem.normalizePath(
+            runtime.workingDirectory,
+            args.single()
+        )
 
         if (!fileSystem.exists(path)) {
-            terminal.appendLine("source: file not found: $path")
+            terminal.appendLine(
+                "source: file not found: $path"
+            )
+            return
+        }
+
+        if (fileSystem.isDirectory(path)) {
+            terminal.appendLine(
+                "source: is a directory: $path"
+            )
             return
         }
 
@@ -94,10 +113,12 @@ class KShInterpreter(
             .filter(String::isNotEmpty)
             .filterNot { it.startsWith("#") }
             .forEach { line ->
-                executeLine(line, depth + 1)
+                executeLine(
+                    line,
+                    depth + 1
+                )
             }
     }
-
     private fun touch(args: List<String>) {
         if (args.size != 1) {
             terminal.appendLine("touch: expected one path")

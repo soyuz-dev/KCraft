@@ -212,26 +212,43 @@ class TerminalTest {
 
     @Test
     fun `scrolling moves through history`() {
-        repeat(12) { index ->
+        val extraLines = 5
+
+        repeat(Terminal.VISIBLE_LINES + extraLines) { index ->
             terminal.appendLine("Row $index")
         }
 
         var visible = terminal.visibleLines
 
-        assertEquals("Row 5", visible.first())
-        assertEquals(Terminal.PROMPT, visible.last())
+        // There are VISIBLE_LINES + 5 history lines, plus the prompt.
+        // Therefore the viewport begins at history row 6.
+        assertEquals(
+            "Row ${extraLines + 1}",
+            visible.first()
+        )
+
+        assertEquals(
+            Terminal.PROMPT,
+            visible.last()
+        )
 
         terminal.scrollUp(2)
 
         visible = terminal.visibleLines
 
-        assertEquals("Row 3", visible.first())
+        assertEquals(
+            "Row ${extraLines - 1}",
+            visible.first()
+        )
 
         terminal.scrollDown(2)
 
         visible = terminal.visibleLines
 
-        assertEquals("Row 5", visible.first())
+        assertEquals(
+            "Row ${extraLines + 1}",
+            visible.first()
+        )
     }
 
     @Test
