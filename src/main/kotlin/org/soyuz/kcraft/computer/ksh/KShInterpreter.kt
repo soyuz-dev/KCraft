@@ -45,7 +45,7 @@ class KShInterpreter(
 
             "ls" -> ls(args)
             "cat" -> cat(args)
-            "del" -> del(args)
+            "rm" -> rm(args)
             "rmdir" -> rmdir(args)
 
             "pico" -> pico(args)
@@ -246,9 +246,9 @@ class KShInterpreter(
             .forEach(terminal::appendLine)
     }
 
-    private fun del(args: List<String>) {
+    private fun rm(args: List<String>) {
         if (args.size != 1) {
-            terminal.appendLine("del: expected one path")
+            terminal.appendLine("rm: expected one path")
             return
         }
 
