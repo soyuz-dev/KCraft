@@ -8,34 +8,39 @@ The goal is to provide computers that expose Minecraft functionality through a K
 
 Rather than treating computers as isolated virtual machines, KCraft aims to make them programmable interfaces to the Minecraft world itself.
 
-KCraft is currently in early development.
+**Current release: KCraft 0.1 Alpha — *It computes!***
 
 ## Computers
 
 The Computer Block is the centre of KCraft's programmable systems.
 
-Each computer has its own runtime and persistent filesystem, with an interactive terminal accessible in-game.
+Each computer has its own server-authoritative runtime and persistent filesystem, with an interactive display accessible in-game.
 
 Internally, computers currently consist of:
 
 - A server-authoritative `ComputerRuntime`
-- An interactive terminal with scrollback and cursor support
+- An interactive terminal with history, scrolling and cursor editing
 - A persistent filesystem unique to each computer
 - KSh, KCraft's shell and orchestration language
-- A client/server networking layer for computer interaction
-- A mode system for interactive programs such as the terminal and future text editor
+- Pico, KCraft's tiny built-in text editor
+- A generic `ComputerMode` system for interactive programs
+- A client/server networking layer for input and display synchronisation
 
 The Minecraft GUI acts primarily as a remote display and input device. Programs, files and computer state live on the server.
 
-## Rubies
+Multiple players viewing the same computer interact with the same underlying runtime.
 
-Rubies are KCraft's primary computing material.
+## Survival Progression
 
-They are used in the crafting progression towards computer chips and computers, giving programmable systems a survival progression rather than making computers immediately available from common Overworld materials.
+KCraft computers are obtainable in survival.
 
-Ruby Ore is a Nether ore associated with blackstone. It can be mined to obtain rubies and supports normal ore behaviour including Fortune and Silk Touch.
+Rubies are KCraft's primary computing material and form part of the crafting progression towards computer chips and computers.
 
-The intended progression is roughly:
+Ruby Ore generates naturally in the Nether by replacing blackstone. It generates in small veins, making blackstone-rich areas the primary place to search for rubies.
+
+Ruby Ore supports normal Minecraft ore behaviour, including Fortune, Silk Touch and experience drops.
+
+The basic progression is:
 
 ```text
 Reach the Nether
@@ -51,15 +56,13 @@ Craft a Computer
 Start programming
 ```
 
-Ruby Ore generates naturally in the Nether by replacing blackstone. Generation is intentionally limited to small veins, so finding blackstone-rich areas is an important part of obtaining rubies in survival mode.
-
 ## KSh
 
 KSh is KCraft's shell and orchestration language.
 
 Despite sharing the `.ksh` extension with KornShell, KSh is unrelated to KornShell.
 
-KSh is **not intended to be a simpler alternative to Kotlin scripting**. Kotlin scripts contain the actual program logic; KSh exists to launch, configure and coordinate those programs.
+KSh is **not intended to be a simpler alternative to Kotlin scripting**. Kotlin scripts are intended to contain actual program logic; KSh exists to launch, configure and coordinate those programs.
 
 Its role is closer to a mixture of a shell script, Makefile and Gradle build script.
 
@@ -76,23 +79,36 @@ wait
 echo "Mining complete."
 ```
 
-KSh is intended for launching programs, configuring the computer environment, managing files and processes, and connecting larger systems together.
+KSh already provides a small Unix-like environment for interacting with the computer.
 
-Currently implemented shell functionality includes:
+Currently implemented commands include:
 
 ```text
 echo
 clear
 source
+
+pwd
+cd
+ls
+cat
+
 touch
 mkdir
-cd
-pwd
+rmdir
+rm
+
 append
 appendln
+
+pico
 ```
 
-KSh files can already be created, modified and executed entirely from inside Minecraft. For example:
+KSh supports both absolute and relative paths, with relative paths resolved against the computer's current working directory.
+
+Scripts can be created, edited and executed entirely inside Minecraft.
+
+For example:
 
 ```sh
 touch hello.ksh
@@ -106,11 +122,47 @@ produces:
 Hello, world!
 ```
 
-More shell functionality will be added as the runtime develops.
+Or, somewhat more comfortably:
+
+```text
+> pico hello.ksh
+```
+
+Write:
+
+```sh
+echo "Hello from Pico!"
+```
+
+save, exit, and then:
+
+```text
+> source hello.ksh
+Hello from Pico!
+```
+
+## Pico
+
+Pico is KCraft's built-in text editor.
+
+The name is intentional: it's smaller than Nano.
+
+Pico allows scripts and other text files to be edited directly inside a KCraft computer. It currently supports:
+
+- Character insertion and deletion
+- Multiple lines
+- Cursor movement
+- Automatic viewport scrolling
+- Opening existing files
+- Creating new files
+- Saving files
+- Returning to the terminal
+
+Pico runs as a `ComputerMode`, meaning it uses the same generic input and display system as the terminal rather than requiring a separate Minecraft GUI.
 
 ## Kotlin Scripting
 
-Kotlin scripts (`.kts`) are planned to provide the main programming environment for KCraft.
+Kotlin scripts (`.kts`) are planned to provide KCraft's main programming environment.
 
 Unlike mods that implement an entirely separate virtual computer, KCraft intends to expose controlled abstractions over the Minecraft runtime directly to Kotlin programs.
 
@@ -132,6 +184,8 @@ In short:
 .ksh → program orchestration
 ```
 
+`.kts` execution is **not implemented in 0.1 Alpha**.
+
 ## Filesystem
 
 Every computer has its own persistent filesystem.
@@ -148,71 +202,74 @@ A new computer is populated from KCraft's bundled `rootfs`, currently structured
 └── tmp/
 ```
 
-The filesystem supports:
+The filesystem currently supports:
 
 - Reading and writing files
 - Appending text to files
-- File and directory creation
+- Creating and deleting files
+- Creating and deleting empty directories
+- Directory listing
 - Absolute and relative paths
 - Path normalisation
 - Working directories
-- Directory listing
 - Protection against escaping the computer's filesystem root
 
 Each computer is assigned a persistent UUID, allowing its files to remain associated with that computer across chunk and world reloads.
 
 ## Terminal
 
-The terminal is currently the default interactive computer mode.
+The terminal is KCraft's default interactive computer mode.
 
-It supports:
+It currently supports:
 
 - 12 visible lines
 - 128 characters per line
 - 64 lines of scrollback
 - Editable input independent of terminal history
-- Cursor positioning
+- Cursor positioning and editing
 - Scrolling
 - Server-authoritative state synchronisation
 
 Input is sent to the server, processed by the computer's runtime, and the resulting display state is synchronised back to connected clients.
 
-Multiple players viewing the same computer therefore interact with the same underlying runtime.
-
 ## Computer Modes
 
 Interactive interfaces in KCraft implement the `ComputerMode` abstraction.
 
-The terminal itself is one computer mode. This allows the runtime to switch between different interactive programs without requiring the Minecraft GUI or networking layer to understand their internal behaviour.
+Currently implemented modes are:
 
-Planned modes include:
+```text
+Terminal
+Pico
+```
 
-- Terminal
-- Pico text editor
-- Potential future file browsers, process monitors and other interactive programs
+A mode receives semantic computer input and produces a generic display state consisting primarily of text and cursor information.
 
-The client only needs to send input and display the state produced by the active mode.
+This means the Minecraft client does not need to understand the application running on the computer:
 
-## Pico
+```text
+Minecraft keyboard
+       ↓
+semantic input
+       ↓
+ComputerRuntime
+       ↓
+active ComputerMode
+       ↓
+display state
+       ↓
+Minecraft screen
+```
 
-Pico is KCraft's planned built-in text editor.
-
-It is intended to provide the small subset of editor functionality needed to comfortably write KSh and Kotlin scripts directly inside Minecraft:
-
-- Text insertion and deletion
-- Cursor movement
-- Multiple lines
-- Saving files
-- Exiting back to the terminal
-
-The name is intentional: it's smaller than Nano.
+Future interactive programs can therefore be added without requiring an entirely new client/server GUI architecture.
 
 ## Planned Features
 
-KCraft is still very early in development. Planned systems include:
+KCraft 0.1 Alpha establishes the basic computer environment. Future development is intended to expand what those computers can actually control and automate.
+
+Planned systems include:
 
 - `.kts` execution
-- Pico, the in-game text editor
 - Process management
 - Expanded environment variables
 - Expanded KSh syntax
@@ -257,21 +314,36 @@ KCraft is written primarily in Kotlin and currently targets:
 Several runtime-independent components are unit tested separately from Minecraft, including:
 
 - Terminal
+- Pico
 - Filesystem and path handling
 - KSh lexer
 - KSh interpreter
 
-Minecraft-specific code is kept primarily around lifecycle, networking, persistence, rendering and interaction with the game itself.
+Minecraft-specific code is kept primarily around lifecycle, networking, persistence, rendering, world generation and interaction with the game itself.
+
+## Requirements
+
+KCraft 0.1 Alpha requires:
+
+- Minecraft 26.2
+- Fabric Loader
+- Fabric API
+- Fabric Language Kotlin
+- Java 25
 
 ## Status
 
-**Early alpha.**
+**0.1 Alpha — It computes!**
 
-KCraft can already provide persistent computers with an interactive terminal, filesystem and executable KSh scripts, but much of the larger programming and automation environment is still under development.
+KCraft currently provides survival-obtainable, persistent computers with an interactive terminal, filesystem, KSh scripting environment and in-game text editor.
+
+The larger Kotlin programming and automation environment is still under development.
 
 APIs, filesystem formats, scripts, recipes, world data, networking protocols and basically anything else may change without backwards compatibility.
 
 Do not entrust KCraft with the only copy of anything important.
+
+Or do, for all I care.
 
 ## License
 
