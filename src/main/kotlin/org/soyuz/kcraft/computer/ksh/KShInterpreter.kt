@@ -34,12 +34,20 @@ class KShInterpreter(
             "echo" -> echo(args)
             "clear" -> clear(args)
             "source" -> source(args, sourceDepth)
+
             "touch" -> touch(args)
             "mkdir" -> mkdir(args)
             "cd" -> cd(args)
             "pwd" -> pwd(args)
+
             "append" -> append(args)
             "appendln" -> append(args, newline = true)
+
+            "ls" -> ls(args)
+            "cat" -> cat(args)
+            "del" -> del(args)
+            "rmdir" -> rmdir(args)
+
             "pico" -> pico(args)
 
 
@@ -210,5 +218,93 @@ class KShInterpreter(
         runtime.openPico(
             args.single()
         )
+    }
+
+    private fun ls(args: List<String>) {
+        if (args.size > 1) {
+            terminal.appendLine("ls: expected at most one path")
+            return
+        }
+
+        val path = fileSystem.normalizePath(
+            runtime.workingDirectory,
+            args.firstOrNull() ?: "."
+        )
+
+        if (!fileSystem.exists(path)) {
+            terminal.appendLine("ls: path not found: $path")
+            return
+        }
+
+        if (!fileSystem.isDirectory(path)) {
+            terminal.appendLine("ls: not a directory: $path")
+            return
+        }
+
+        fileSystem.list(path)
+            .sorted()
+            .forEach(terminal::appendLine)
+    }
+
+    private fun del(args: List<String>) {
+        if (args.size != 1) {
+            terminal.appendLine("del: expected one path")
+            return
+        }
+
+        val path = fileSystem.normalizePath(
+            runtime.workingDirectory,
+            args.single()
+        )
+
+        try {
+            fileSystem.deleteFile(path)
+        } catch (e: IllegalArgumentException) {
+            terminal.appendLine("del: ${e.message}")
+        }
+    }
+
+    private fun rmdir(args: List<String>) {
+        if (args.size != 1) {
+            terminal.appendLine("rmdir: expected one path")
+            return
+        }
+
+        val path = fileSystem.normalizePath(
+            runtime.workingDirectory,
+            args.single()
+        )
+
+        try {
+            fileSystem.deleteDirectory(path)
+        } catch (e: IllegalArgumentException) {
+            terminal.appendLine("rmdir: ${e.message}")
+        }
+    }
+
+    private fun cat(args: List<String>) {
+        if (args.size != 1) {
+            terminal.appendLine("cat: expected one path")
+            return
+        }
+
+        val path = fileSystem.normalizePath(
+            runtime.workingDirectory,
+            args.single()
+        )
+
+        if (!fileSystem.exists(path)) {
+            terminal.appendLine("cat: file not found: $path")
+            return
+        }
+
+        if (fileSystem.isDirectory(path)) {
+            terminal.appendLine("cat: is a directory: $path")
+            return
+        }
+
+        fileSystem.readFile(path)
+            .lineSequence()
+            .forEach(terminal::appendLine)
     }
 }

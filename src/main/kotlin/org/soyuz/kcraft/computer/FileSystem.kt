@@ -5,6 +5,7 @@ import java.util.UUID
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createDirectory
 import kotlin.io.path.createFile
+import kotlin.io.path.deleteExisting
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
 import kotlin.io.path.listDirectoryEntries
@@ -233,5 +234,41 @@ class FileSystem(
         }
 
         return resolved
+    }
+
+    fun deleteFile(path: String) {
+        val file = resolve(path)
+
+        require(file.exists()) {
+            "File does not exist: $path"
+        }
+
+        require(!file.isDirectory()) {
+            "Is a directory: $path"
+        }
+
+        file.deleteExisting()
+    }
+
+    fun deleteDirectory(path: String) {
+        val directory = resolve(path)
+
+        require(directory.exists()) {
+            "Directory does not exist: $path"
+        }
+
+        require(directory.isDirectory()) {
+            "Not a directory: $path"
+        }
+
+        require(normalizePath("/", path) != "/") {
+            "Cannot delete filesystem root"
+        }
+
+        require(directory.listDirectoryEntries().isEmpty()) {
+            "Directory is not empty: $path"
+        }
+
+        directory.deleteExisting()
     }
 }
