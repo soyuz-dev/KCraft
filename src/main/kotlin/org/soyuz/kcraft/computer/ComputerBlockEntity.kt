@@ -119,16 +119,16 @@ class ComputerBlockEntity(
     }
 
     fun syncDisplay(player: ServerPlayer) {
-        val terminal = runtime.terminal
-        val cursor = terminal.visibleCursorPosition
+        val state = runtime.displayState()
 
-        val payload = ComputerDisplayStatePayload(
-            terminal.visibleLines.toList(),
-            cursor?.row ?: -1,
-            cursor?.column ?: -1
+        ServerPlayNetworking.send(
+            player,
+            ComputerDisplayStatePayload(
+                lines = state.lines,
+                cursorRow = state.cursorRow ?: -1,
+                cursorColumn = state.cursorColumn ?: -1
+            )
         )
-
-        ServerPlayNetworking.send(player, payload)
     }
 
     fun syncDisplay() {

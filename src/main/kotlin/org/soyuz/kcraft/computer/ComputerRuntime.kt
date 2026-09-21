@@ -71,8 +71,7 @@ class ComputerRuntime(
         workingDirectory = normalized
         return true
     }
-
-    fun openNano(path: String) {
+    fun openPico(path: String) {
         val normalized = fileSystem.normalizePath(
             workingDirectory,
             path
@@ -83,7 +82,7 @@ class ComputerRuntime(
             fileSystem.isDirectory(normalized)
         ) {
             terminal.appendLine(
-                "nano: is a directory: $path"
+                "pico: is a directory: $path"
             )
             return
         }
@@ -104,4 +103,5 @@ class ComputerRuntime(
     fun returnToTerminal() {
         activeMode = terminal
     }
+
 }

@@ -15,8 +15,8 @@ data class ComputerInputPayload(
         CHARACTER,
         BACKSPACE,
         ENTER,
-        SCROLL_UP,
-        SCROLL_DOWN,
+        UP,
+        DOWN,
         LEFT,
         RIGHT,
         SAVE,
@@ -59,10 +59,10 @@ fun ComputerInputPayload.toComputerInput(): ComputerInput =
         ComputerInputPayload.Type.BACKSPACE ->
             ComputerInput.Backspace
 
-        ComputerInputPayload.Type.SCROLL_UP ->
+        ComputerInputPayload.Type.UP ->
             ComputerInput.Up
 
-        ComputerInputPayload.Type.SCROLL_DOWN ->
+        ComputerInputPayload.Type.DOWN ->
             ComputerInput.Down
 
         ComputerInputPayload.Type.LEFT ->

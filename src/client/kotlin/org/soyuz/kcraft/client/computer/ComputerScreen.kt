@@ -58,47 +58,47 @@ class ComputerScreen(
     }
 
     override fun keyPressed(event: KeyEvent): Boolean {
-        when (event.key) {
-            GLFW.GLFW_KEY_ENTER -> {
-                ClientPlayNetworking.send(
-                    ComputerInputPayload(
-                        ComputerInputPayload.Type.ENTER
-                    )
-                )
-                return true
-            }
+        val input = when {
+            event.key == GLFW.GLFW_KEY_ENTER ->
+                ComputerInputPayload.Type.ENTER
 
-            GLFW.GLFW_KEY_BACKSPACE -> {
-                ClientPlayNetworking.send(
-                    ComputerInputPayload(
-                        ComputerInputPayload.Type.BACKSPACE
-                    )
-                )
-                return true
-            }
+            event.key == GLFW.GLFW_KEY_BACKSPACE ->
+                ComputerInputPayload.Type.BACKSPACE
 
-            GLFW.GLFW_KEY_UP -> {
-                ClientPlayNetworking.send(
-                    ComputerInputPayload(
-                        ComputerInputPayload.Type.SCROLL_UP
-                    )
-                )
-                return true
-            }
+            event.key == GLFW.GLFW_KEY_UP ->
+                ComputerInputPayload.Type.UP
 
-            GLFW.GLFW_KEY_DOWN -> {
-                ClientPlayNetworking.send(
-                    ComputerInputPayload(
-                        ComputerInputPayload.Type.SCROLL_DOWN
-                    )
-                )
-                return true
-            }
+            event.key == GLFW.GLFW_KEY_DOWN ->
+                ComputerInputPayload.Type.DOWN
 
-            GLFW.GLFW_KEY_E -> {
-                // prevent inventory key from closing/opening over the screen
-                return true
-            }
+            event.key == GLFW.GLFW_KEY_LEFT ->
+                ComputerInputPayload.Type.LEFT
+
+            event.key == GLFW.GLFW_KEY_RIGHT ->
+                ComputerInputPayload.Type.RIGHT
+
+            event.key == GLFW.GLFW_KEY_S &&
+                    event.modifiers and GLFW.GLFW_MOD_CONTROL != 0 ->
+                ComputerInputPayload.Type.SAVE
+
+            event.key == GLFW.GLFW_KEY_X &&
+                    event.modifiers and GLFW.GLFW_MOD_CONTROL != 0 ->
+                ComputerInputPayload.Type.EXIT
+
+            else -> null
+        }
+
+        if (input != null) {
+            ClientPlayNetworking.send(
+                ComputerInputPayload(input)
+            )
+
+            return true
+        }
+
+        // Keep Minecraft's inventory key from interfering.
+        if (event.key == GLFW.GLFW_KEY_E) {
+            return true
         }
 
         return super.keyPressed(event)

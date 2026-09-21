@@ -40,6 +40,7 @@ class KShInterpreter(
             "pwd" -> pwd(args)
             "append" -> append(args)
             "appendln" -> append(args, newline = true)
+            "pico" -> pico(args)
 
 
             else -> terminal.appendLine(
@@ -196,5 +197,18 @@ class KShInterpreter(
         val name = value.drop(1)
 
         return runtime.environment.get(name) ?: ""
+    }
+
+    private fun pico(args: List<String>) {
+        if (args.size != 1) {
+            terminal.appendLine(
+                "pico: expected one path"
+            )
+            return
+        }
+
+        runtime.openPico(
+            args.single()
+        )
     }
 }
