@@ -14,6 +14,7 @@ group = project.property("maven_group") as String
 val minecraftVersion: String by project
 val loaderVersion: String by project
 val kotlinLoaderVersion: String by project
+val kotlinVersion: String = "2.4.10"
 
 base {
     archivesName.set(project.property("archives_base_name") as String)
@@ -43,7 +44,7 @@ fabricApi {
 }
 
 repositories {
-    // Add repositories here if needed
+
 }
 
 tasks.test {
@@ -55,13 +56,18 @@ dependencies {
     implementation("net.fabricmc:fabric-loader:$loaderVersion")
     implementation("net.fabricmc:fabric-language-kotlin:$kotlinLoaderVersion")
     implementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
+
+    implementation("org.jetbrains.kotlin:kotlin-scripting-common:$kotlinVersion")
+    implementation("org.jetbrains.kotlin:kotlin-scripting-jvm:$kotlinVersion")
+    implementation("org.jetbrains.kotlin:kotlin-scripting-jvm-host:$kotlinVersion")
+
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 }
 
 tasks.processResources {
     inputs.property("version", project.version)
-    inputs.property("minecraftVersion", minecraftVersion)  // ✅ Use camelCase
+    inputs.property("minecraftVersion", minecraftVersion)
     inputs.property("loaderVersion", loaderVersion)
     inputs.property("kotlinLoaderVersion", kotlinLoaderVersion)
 
@@ -70,7 +76,7 @@ tasks.processResources {
     filesMatching("fabric.mod.json") {
         expand(
             "version" to project.version,
-            "minecraftVersion" to minecraftVersion,      // ✅ Use camelCase
+            "minecraftVersion" to minecraftVersion,
             "loaderVersion" to loaderVersion,
             "kotlinLoaderVersion" to kotlinLoaderVersion
         )

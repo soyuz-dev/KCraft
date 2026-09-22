@@ -1,6 +1,7 @@
 package org.soyuz.kcraft.computer.ksh
 
 import org.soyuz.kcraft.computer.ComputerRuntime
+import kotlin.script.experimental.api.ScriptDiagnostic
 
 class KShInterpreter(
     private val runtime: ComputerRuntime
@@ -55,6 +56,7 @@ class KShInterpreter(
             "echo" -> echo(args)
             "clear" -> clear(args)
             "source" -> source(args, sourceDepth)
+            "run" -> run(args)
 
             "touch" -> touch(args)
             "mkdir" -> mkdir(args)
@@ -386,6 +388,73 @@ class KShInterpreter(
                 terminal.appendLine(
                     "help: expected at most one command"
                 )
+        }
+    }
+
+    private fun run(args: List<String>) {
+        if (args.size != 1) {
+            terminal.appendLine(
+                "run: expected exactly one path"
+            )
+            return
+        }
+
+        val path = fileSystem.normalizePath(
+            runtime.workingDirectory,
+            args.single()
+        )
+
+        if (!fileSystem.exists(path)) {
+            terminal.appendLine(
+                "run: file not found: $path"
+            )
+            return
+        }
+
+        if (fileSystem.isDirectory(path)) {
+            terminal.appendLine(
+                "run: is a directory: $path"
+            )
+            return
+        }
+
+        if (!path.endsWith(".kts")) {
+            terminal.appendLine(
+                "run: expected a .kts file"
+            )
+            return
+        }
+
+        val source = fileSystem.readFile(path)
+
+        val result = runtime.kotlin.execute(source)
+
+        result.reports
+            .filter { report ->
+                report.severity >=
+                        ScriptDiagnostic.Severity.WARNING
+            }
+            .forEach { report ->
+                terminal.appendLine(
+                    formatDiagnostic(
+                        path,
+                        report
+                    )
+                )
+            }
+    }
+
+    private fun formatDiagnostic(
+        path: String,
+        diagnostic: ScriptDiagnostic
+    ): String {
+        val location = diagnostic.location
+
+        return if (location != null) {
+            "$path:${location.start.line}:${location.start.col}: " +
+                    diagnostic.message
+        } else {
+            "$path: ${diagnostic.message}"
         }
     }
 }

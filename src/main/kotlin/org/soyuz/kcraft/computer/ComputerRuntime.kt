@@ -1,5 +1,6 @@
 package org.soyuz.kcraft.computer
 
+import org.soyuz.kcraft.computer.api.KotlinScriptRuntime
 import org.soyuz.kcraft.computer.ksh.KShEnvironment
 import org.soyuz.kcraft.computer.ksh.KShInterpreter
 
@@ -21,6 +22,7 @@ class ComputerRuntime(
 
     val environment = KShEnvironment(this)
     val interpreter = KShInterpreter(this)
+    val kotlin = KotlinScriptRuntime(RuntimeScriptContext(this))
 
     fun tick() {
         if (!booted) return
