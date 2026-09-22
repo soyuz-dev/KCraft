@@ -12,9 +12,9 @@ class KotlinScriptRuntime(
 
     private val host = BasicJvmScriptingHost()
 
-    fun execute(source: String): ResultWithDiagnostics<*> {
+    fun execute(source: String, name: String): ResultWithDiagnostics<*> {
         return host.eval(
-            source.toScriptSource(),
+            source.toScriptSource(name),
             KCraftScriptCompilationConfiguration,
             ScriptEvaluationConfiguration {
                 constructorArgs(context)

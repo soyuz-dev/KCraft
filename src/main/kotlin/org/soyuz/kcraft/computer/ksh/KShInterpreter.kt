@@ -1,6 +1,7 @@
 package org.soyuz.kcraft.computer.ksh
 
 import org.soyuz.kcraft.computer.ComputerRuntime
+import kotlin.script.experimental.api.ResultWithDiagnostics
 import kotlin.script.experimental.api.ScriptDiagnostic
 
 class KShInterpreter(
@@ -425,36 +426,59 @@ class KShInterpreter(
             return
         }
 
-        val source = fileSystem.readFile(path)
+        val source =
+            fileSystem.readFile(path)
 
-        val result = runtime.kotlin.execute(source)
+        val result =
+            runtime.kotlin.execute(
+                source = source,
+                name = path
+            )
 
-        result.reports
-            .filter { report ->
-                report.severity >=
-                        ScriptDiagnostic.Severity.WARNING
-            }
-            .forEach { report ->
-                terminal.appendLine(
-                    formatDiagnostic(
-                        path,
-                        report
-                    )
-                )
-            }
+        printDiagnostics(result)
     }
 
     private fun formatDiagnostic(
-        path: String,
         diagnostic: ScriptDiagnostic
     ): String {
         val location = diagnostic.location
 
-        return if (location != null) {
-            "$path:${location.start.line}:${location.start.col}: " +
-                    diagnostic.message
-        } else {
-            "$path: ${diagnostic.message}"
+        val severity = when (diagnostic.severity) {
+            ScriptDiagnostic.Severity.FATAL ->
+                "fatal"
+
+            ScriptDiagnostic.Severity.ERROR ->
+                "error"
+
+            ScriptDiagnostic.Severity.WARNING ->
+                "warning"
+
+            ScriptDiagnostic.Severity.INFO ->
+                "info"
+
+            ScriptDiagnostic.Severity.DEBUG ->
+                "debug"
         }
+
+        return if (location != null) {
+            "${location.start.line}:${location.start.col}: " +
+                    "$severity: ${diagnostic.message}"
+        } else {
+            "$severity: ${diagnostic.message}"
+        }
+    }
+
+    private fun printDiagnostics(
+        result: ResultWithDiagnostics<*>
+    ) {
+        result.reports
+            .filter {
+                it.severity >= ScriptDiagnostic.Severity.WARNING
+            }
+            .forEach { diagnostic ->
+                terminal.appendLine(
+                    formatDiagnostic(diagnostic)
+                )
+            }
     }
 }
