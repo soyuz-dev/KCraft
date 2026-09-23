@@ -5,7 +5,9 @@ import org.soyuz.kcraft.computer.api.KCraftScriptContext
 import org.soyuz.kcraft.computer.api.KCraftTerminal
 import org.soyuz.kcraft.computer.api.KCraftFileSystem
 import org.soyuz.kcraft.computer.process.ComputerRequest
+import org.soyuz.kcraft.computer.process.FileRequest
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
 
 internal class RuntimeScriptContext(
     runtime: ComputerRuntime
@@ -46,10 +48,18 @@ internal class RuntimeScriptFileSystem(
             path
         )
 
-    override fun read(path: String): String =
-        fileSystem.readFile(
-            resolve(path)
+    override fun read(path: String): String {
+        val result = CompletableFuture<String>()
+
+        runtime.submitRequest(
+            FileRequest.ReadFile(
+                resolve(path),
+                result
+            )
         )
+
+        return result.await()
+    }
 
     override fun write(
         path: String,
@@ -58,63 +68,108 @@ internal class RuntimeScriptFileSystem(
         val result = CompletableFuture<Unit>()
 
         runtime.submitRequest(
-            ComputerRequest.WriteFile(
-                path,
-                content,
-                result
+            FileRequest.WriteFile(
+                path = resolve(path),
+                content = content,
+                result = result
             )
         )
 
-        result.join()
+        result.await()
     }
 
     override fun append(
         path: String,
         content: String
     ) {
-        fileSystem.appendFile(
-            resolve(path),
-            content
+        val result = CompletableFuture<Unit>()
+
+        runtime.submitRequest(
+            FileRequest.AppendFile(
+                path = resolve(path),
+                content = content,
+                result = result
+            )
         )
+
+        result.await()
     }
 
-    override fun exists(path: String): Boolean =
-        fileSystem.exists(
-            resolve(path)
+    override fun exists(path: String): Boolean {
+        val result = CompletableFuture<Boolean>()
+        runtime.submitRequest(
+            FileRequest.FileExists(
+                resolve(path),
+                result
+            )
         )
+        return result.await()
+    }
 
-    override fun isDirectory(path: String): Boolean =
-        fileSystem.isDirectory(
-            resolve(path)
+    override fun isDirectory(path: String): Boolean {
+        val result = CompletableFuture<Boolean>()
+        runtime.submitRequest(
+            FileRequest.IsDirectory(
+                resolve(path),
+                result
+            )
         )
+        return result.await()
+    }
 
-    override fun list(path: String): List<String> =
-        fileSystem.list(
-            resolve(path)
+    override fun list(path: String): List<String> {
+        val result = CompletableFuture<List<String>>()
+        runtime.submitRequest(
+            FileRequest.ListDirectory(
+                resolve(path),
+                result
+            )
         )
+        return result.await()
+    }
 
     override fun createFile(path: String) {
-        fileSystem.createFile(
-            resolve(path)
+        val result = CompletableFuture<Unit>()
+        runtime.submitRequest(
+            FileRequest.CreateFile(
+                resolve(path),
+                result
+            )
         )
+        return result.await()
     }
 
     override fun createDirectory(path: String) {
-        fileSystem.createDirectory(
-            resolve(path)
+        val result = CompletableFuture<Unit>()
+        runtime.submitRequest(
+            FileRequest.CreateDirectory(
+                resolve(path),
+                result
+            )
         )
+        return result.await()
     }
 
     override fun deleteFile(path: String) {
-        fileSystem.deleteFile(
-            resolve(path)
+        val result = CompletableFuture<Unit>()
+        runtime.submitRequest(
+            FileRequest.DeleteFile(
+                resolve(path),
+                result
+            )
         )
+        return result.await()
     }
 
     override fun deleteDirectory(path: String) {
-        fileSystem.deleteDirectory(
-            resolve(path)
+        val result = CompletableFuture<Unit>()
+        runtime.submitRequest(
+            FileRequest.DeleteDirectory(
+                resolve(path),
+                result
+            )
         )
+        return result.await()
     }
 }
 
@@ -125,3 +180,10 @@ internal class RuntimeScriptEnvironment(
     override fun get(name: String): String? =
         runtime.environment.get(name)
 }
+
+private fun <T> CompletableFuture<T>.await(): T =
+    try {
+        join()
+    } catch (e: CompletionException) {
+        throw e.cause ?: e
+    }

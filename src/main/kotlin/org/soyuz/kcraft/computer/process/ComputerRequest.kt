@@ -7,9 +7,7 @@ sealed interface ComputerRequest {
         val text: String
     ) : ComputerRequest
 
-    data class WriteFile(
-        val path: String,
-        val content: String,
-        val result: CompletableFuture<Unit>
-    ) : ComputerRequest
+
+
 }
+

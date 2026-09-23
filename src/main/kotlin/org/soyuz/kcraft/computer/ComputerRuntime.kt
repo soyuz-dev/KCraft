@@ -4,8 +4,11 @@ import org.soyuz.kcraft.computer.api.KotlinScriptRuntime
 import org.soyuz.kcraft.computer.ksh.KShEnvironment
 import org.soyuz.kcraft.computer.ksh.KShInterpreter
 import org.soyuz.kcraft.computer.process.ComputerRequest
+import org.soyuz.kcraft.computer.process.FileRequest
 import org.soyuz.kcraft.computer.process.KCraftProcessManager
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.script.experimental.api.makeFailureResult
 
 class ComputerRuntime(
     val terminal: Terminal,
@@ -124,17 +127,73 @@ class ComputerRuntime(
 
         while (true) {
             when (val request = requests.poll() ?: break) {
+
                 is ComputerRequest.TerminalOutput -> {
                     terminal.appendLine(request.text)
                     changed = true
                 }
 
-                else -> {
-                    terminal.appendLine("TODO")
-                }
+                is FileRequest -> processFileRequest(request)
             }
         }
 
         return changed
+    }
+
+    private fun processFileRequest(request: FileRequest) {
+        when(request) {
+            is FileRequest.WriteFile -> {
+                complete(request.result, { fileSystem.writeFile(request.path, request.content) })
+            }
+
+            is FileRequest.ReadFile -> {
+                complete(request.result, { fileSystem.readFile(request.path) })
+            }
+
+            is FileRequest.FileExists -> {
+                complete(request.result, { fileSystem.exists(request.path) })
+            }
+
+            is FileRequest.AppendFile -> {
+                complete(request.result, { fileSystem.appendFile(request.path, request.content) })
+            }
+
+            is FileRequest.CreateFile -> {
+                complete(request.result, { fileSystem.createFile(request.path) })
+            }
+
+            is FileRequest.DeleteFile -> {
+                complete(request.result, { fileSystem.deleteFile(request.path) })
+            }
+
+            is FileRequest.IsDirectory -> {
+                complete(request.result, { fileSystem.isDirectory(request.path) })
+            }
+
+            is FileRequest.ListDirectory -> {
+                complete(request.result, { fileSystem.list(request.path) })
+            }
+
+            is FileRequest.CreateDirectory -> {
+                complete(request.result, { fileSystem.createDirectory(request.path) })
+            }
+
+            is FileRequest.DeleteDirectory -> {
+                complete(request.result, { fileSystem.deleteDirectory(request.path) })
+            }
+        }
+    }
+
+    private inline fun <T> complete(
+        future: CompletableFuture<T>,
+        operation: () -> T
+    ) {
+        try {
+            future.complete(
+                operation()
+            )
+        } catch (e: Throwable) {
+            future.completeExceptionally(e)
+        }
     }
 }
