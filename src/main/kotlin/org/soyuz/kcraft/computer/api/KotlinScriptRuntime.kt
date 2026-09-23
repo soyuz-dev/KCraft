@@ -1,5 +1,6 @@
 package org.soyuz.kcraft.computer.api
 
+import kotlin.script.experimental.api.EvaluationResult
 import kotlin.script.experimental.api.ResultWithDiagnostics
 import kotlin.script.experimental.api.ScriptEvaluationConfiguration
 import kotlin.script.experimental.api.constructorArgs
@@ -12,13 +13,15 @@ class KotlinScriptRuntime(
 
     private val host = BasicJvmScriptingHost()
 
-    fun execute(source: String, name: String): ResultWithDiagnostics<*> {
-        return host.eval(
+    fun execute(
+        source: String,
+        name: String
+    ): ResultWithDiagnostics<EvaluationResult> =
+        host.eval(
             source.toScriptSource(name),
             KCraftScriptCompilationConfiguration,
             ScriptEvaluationConfiguration {
                 constructorArgs(context)
             }
         )
-    }
 }

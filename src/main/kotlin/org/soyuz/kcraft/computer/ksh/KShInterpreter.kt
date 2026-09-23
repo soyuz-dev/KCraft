@@ -1,8 +1,11 @@
 package org.soyuz.kcraft.computer.ksh
 
 import org.soyuz.kcraft.computer.ComputerRuntime
+import kotlin.script.experimental.api.EvaluationResult
+import kotlin.script.experimental.api.ResultValue
 import kotlin.script.experimental.api.ResultWithDiagnostics
 import kotlin.script.experimental.api.ScriptDiagnostic
+import kotlin.script.experimental.api.valueOrNull
 
 class KShInterpreter(
     private val runtime: ComputerRuntime
@@ -307,7 +310,7 @@ class KShInterpreter(
         try {
             fileSystem.deleteFile(path)
         } catch (e: IllegalArgumentException) {
-            terminal.appendLine("del: ${e.message}")
+            terminal.appendLine("rm: ${e.message}")
         }
     }
 
@@ -435,7 +438,7 @@ class KShInterpreter(
                 name = path
             )
 
-        printDiagnostics(result)
+        printResult(result)
     }
 
     private fun formatDiagnostic(
@@ -444,32 +447,27 @@ class KShInterpreter(
         val location = diagnostic.location
 
         val severity = when (diagnostic.severity) {
-            ScriptDiagnostic.Severity.FATAL ->
-                "fatal"
-
-            ScriptDiagnostic.Severity.ERROR ->
-                "error"
-
-            ScriptDiagnostic.Severity.WARNING ->
-                "warning"
-
-            ScriptDiagnostic.Severity.INFO ->
-                "info"
-
-            ScriptDiagnostic.Severity.DEBUG ->
-                "debug"
+            ScriptDiagnostic.Severity.FATAL -> "fatal"
+            ScriptDiagnostic.Severity.ERROR -> "error"
+            ScriptDiagnostic.Severity.WARNING -> "warning"
+            ScriptDiagnostic.Severity.INFO -> "info"
+            ScriptDiagnostic.Severity.DEBUG -> "debug"
         }
+
+        val message =
+            diagnostic.exception?.let(::formatException)
+                ?: diagnostic.message
 
         return if (location != null) {
             "${location.start.line}:${location.start.col}: " +
-                    "$severity: ${diagnostic.message}"
+                    "$severity: $message"
         } else {
-            "$severity: ${diagnostic.message}"
+            "$severity: $message"
         }
     }
 
-    private fun printDiagnostics(
-        result: ResultWithDiagnostics<*>
+    private fun printResult(
+        result: ResultWithDiagnostics<EvaluationResult>
     ) {
         result.reports
             .filter {
@@ -480,5 +478,37 @@ class KShInterpreter(
                     formatDiagnostic(diagnostic)
                 )
             }
+
+        val evaluation = result.valueOrNull()
+            ?: return
+
+        when (val returnValue = evaluation.returnValue) {
+            is ResultValue.Error -> {
+                val exception = returnValue.error
+
+                terminal.appendLine(
+                    "error: ${formatException(exception)}"
+                )
+            }
+
+            else -> Unit
+        }
+    }
+
+    private fun formatException(
+        throwable: Throwable
+    ): String {
+        val type =
+            throwable::class.simpleName
+                ?: "Exception"
+
+        val message =
+            throwable.message
+
+        return if (message.isNullOrBlank()) {
+            type
+        } else {
+            "$type: $message"
+        }
     }
 }
