@@ -135,4 +135,11 @@ class ComputerBlockEntity(
         viewers.forEach(::syncDisplay)
     }
 
+    fun serverTick() {
+        val runtime = _runtime ?: return
+
+        if (runtime.tick()) {
+            syncDisplay()
+        }
+    }
 }

@@ -4,13 +4,15 @@ import org.soyuz.kcraft.computer.api.KCraftEnvironment
 import org.soyuz.kcraft.computer.api.KCraftScriptContext
 import org.soyuz.kcraft.computer.api.KCraftTerminal
 import org.soyuz.kcraft.computer.api.KCraftFileSystem
+import org.soyuz.kcraft.computer.process.ComputerRequest
+import java.util.concurrent.CompletableFuture
 
 internal class RuntimeScriptContext(
     runtime: ComputerRuntime
 ) : KCraftScriptContext {
 
     override val terminal: KCraftTerminal =
-        RuntimeScriptTerminal(runtime.terminal)
+        RuntimeScriptTerminal(runtime)
 
     override val files: KCraftFileSystem =
         RuntimeScriptFileSystem(runtime)
@@ -20,12 +22,14 @@ internal class RuntimeScriptContext(
 
 }
 
-class RuntimeScriptTerminal(
-    private val terminal: Terminal
+internal class RuntimeScriptTerminal(
+    private val runtime: ComputerRuntime
 ) : KCraftTerminal {
 
     override fun println(text: String) {
-        terminal.appendLine(text)
+        runtime.submitRequest(
+            ComputerRequest.TerminalOutput(text)
+        )
     }
 }
 
@@ -51,10 +55,17 @@ internal class RuntimeScriptFileSystem(
         path: String,
         content: String
     ) {
-        fileSystem.writeFile(
-            resolve(path),
-            content
+        val result = CompletableFuture<Unit>()
+
+        runtime.submitRequest(
+            ComputerRequest.WriteFile(
+                path,
+                content,
+                result
+            )
         )
+
+        result.join()
     }
 
     override fun append(

@@ -3,7 +3,9 @@ package org.soyuz.kcraft.computer
 import org.soyuz.kcraft.computer.api.KotlinScriptRuntime
 import org.soyuz.kcraft.computer.ksh.KShEnvironment
 import org.soyuz.kcraft.computer.ksh.KShInterpreter
+import org.soyuz.kcraft.computer.process.ComputerRequest
 import org.soyuz.kcraft.computer.process.KCraftProcessManager
+import java.util.concurrent.ConcurrentLinkedQueue
 
 class ComputerRuntime(
     val terminal: Terminal,
@@ -25,10 +27,18 @@ class ComputerRuntime(
     val interpreter = KShInterpreter(this)
     val kotlin = KotlinScriptRuntime(RuntimeScriptContext(this))
     val processes = KCraftProcessManager(this)
+    private val requests =
+        ConcurrentLinkedQueue<ComputerRequest>()
 
-    fun tick() {
-        if (!booted) return
+    fun submitRequest(request: ComputerRequest) {
+        requests.add(request)
+    }
+
+    fun tick(): Boolean{
+        if (!booted) return false
         uptimeTicks++
+
+        return processRequests()
     }
 
     fun boot() {
@@ -75,6 +85,7 @@ class ComputerRuntime(
         workingDirectory = normalized
         return true
     }
+
     fun openPico(path: String) {
         val normalized = fileSystem.normalizePath(
             workingDirectory,
@@ -108,4 +119,22 @@ class ComputerRuntime(
         activeMode = terminal
     }
 
+    private fun processRequests(): Boolean {
+        var changed = false
+
+        while (true) {
+            when (val request = requests.poll() ?: break) {
+                is ComputerRequest.TerminalOutput -> {
+                    terminal.appendLine(request.text)
+                    changed = true
+                }
+
+                else -> {
+                    terminal.appendLine("TODO")
+                }
+            }
+        }
+
+        return changed
+    }
 }
