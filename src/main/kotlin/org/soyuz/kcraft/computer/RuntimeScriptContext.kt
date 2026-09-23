@@ -1,5 +1,6 @@
 package org.soyuz.kcraft.computer
 
+import org.soyuz.kcraft.computer.api.KCraftEnvironment
 import org.soyuz.kcraft.computer.api.KCraftScriptContext
 import org.soyuz.kcraft.computer.api.KCraftTerminal
 import org.soyuz.kcraft.computer.api.KCraftFileSystem
@@ -13,6 +14,10 @@ internal class RuntimeScriptContext(
 
     override val files: KCraftFileSystem =
         RuntimeScriptFileSystem(runtime)
+
+    override val env: KCraftEnvironment =
+        RuntimeScriptEnvironment(runtime)
+
 }
 
 class RuntimeScriptTerminal(
@@ -100,4 +105,12 @@ internal class RuntimeScriptFileSystem(
             resolve(path)
         )
     }
+}
+
+internal class RuntimeScriptEnvironment(
+    private val runtime: ComputerRuntime
+) : KCraftEnvironment {
+
+    override fun get(name: String): String? =
+        runtime.environment.get(name)
 }
