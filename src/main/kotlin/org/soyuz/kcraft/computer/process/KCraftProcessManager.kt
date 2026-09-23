@@ -34,7 +34,8 @@ class KCraftProcessManager(
 
         processes[process.pid] = process
 
-        executor.submit {
+
+        process.future = executor.submit {
             execute(
                 process,
                 source
@@ -65,6 +66,10 @@ class KCraftProcessManager(
 
             process.result = result
 
+            if (process.state == KCraftProcessState.STOPPED) {
+                return
+            }
+
             reportResult(result)
 
             process.state =
@@ -73,16 +78,23 @@ class KCraftProcessManager(
                 } else {
                     KCraftProcessState.FINISHED
                 }
-        } catch (e: Throwable) {
-            val failure = formatException(e)
 
-            process.failure = failure
+        } catch (e: InterruptedException) {
+            process.state =
+                KCraftProcessState.STOPPED
+
+            Thread.currentThread().interrupt()
+
+        } catch (e: Throwable) {
+            if (process.state == KCraftProcessState.STOPPED) {
+                return
+            }
+
+            process.failure =
+                e.message ?: e::class.simpleName
+
             process.state =
                 KCraftProcessState.FAILED
-
-            runtime.terminal.appendLine(
-                "process ${process.pid}: error: $failure"
-            )
         }
     }
 
@@ -178,6 +190,25 @@ class KCraftProcessManager(
         } else {
             "$type: $message"
         }
+    }
+
+    fun kill(pid: Int): Boolean {
+        val process = processes[pid]
+            ?: return false
+
+        if (
+            process.state != KCraftProcessState.RUNNING &&
+            process.state != KCraftProcessState.STARTING
+        ) {
+            return false
+        }
+
+        process.state =
+            KCraftProcessState.STOPPED
+
+        process.future?.cancel(true)
+
+        return true
     }
 }
 

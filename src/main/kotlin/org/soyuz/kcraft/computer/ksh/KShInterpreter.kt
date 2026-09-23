@@ -38,6 +38,7 @@ class KShInterpreter(
 
         "run" to "Run a Kotlin program",
         "ps" to "List processes",
+        "kill" to "Stop a running process",
     )
 
     fun executeLine(source: String) {
@@ -58,8 +59,11 @@ class KShInterpreter(
             "echo" -> echo(args)
             "clear" -> clear(args)
             "source" -> source(args, sourceDepth)
+
+
             "run" -> run(args)
             "ps" -> ps(args)
+            "kill" -> kill(args)
 
             "touch" -> touch(args)
             "mkdir" -> mkdir(args)
@@ -462,6 +466,35 @@ class KShInterpreter(
                             process.path
                 )
             }
+    }
+
+    private fun kill(args: List<String>) {
+        if (args.size != 1) {
+            terminal.appendLine(
+                "kill: expected one PID"
+            )
+            return
+        }
+
+        val pid = args.single().toIntOrNull()
+
+        if (pid == null) {
+            terminal.appendLine(
+                "kill: invalid PID: ${args.single()}"
+            )
+            return
+        }
+
+        if (!runtime.processes.kill(pid)) {
+            terminal.appendLine(
+                "kill: no running process with PID $pid"
+            )
+            return
+        }
+
+        terminal.appendLine(
+            "Stopped process $pid"
+        )
     }
 
 }

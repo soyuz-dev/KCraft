@@ -1,5 +1,6 @@
 package org.soyuz.kcraft.computer.process
 
+import java.util.concurrent.Future
 import kotlin.script.experimental.api.EvaluationResult
 import kotlin.script.experimental.api.ResultWithDiagnostics
 
@@ -19,4 +20,7 @@ class KCraftProcess(
     @Volatile
     var failure: String? = null
         internal set
+
+    @Volatile
+    internal var future: Future<*>? = null
 }
