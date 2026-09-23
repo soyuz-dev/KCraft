@@ -10,14 +10,15 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 
 internal class RuntimeScriptContext(
-    runtime: ComputerRuntime
+    runtime: ComputerRuntime,
+    workingDirectory: String
 ) : KCraftScriptContext {
 
     override val terminal: KCraftTerminal =
         RuntimeScriptTerminal(runtime)
 
     override val files: KCraftFileSystem =
-        RuntimeScriptFileSystem(runtime)
+        RuntimeScriptFileSystem(runtime, workingDirectory)
 
     override val env: KCraftEnvironment =
         RuntimeScriptEnvironment(runtime)
@@ -36,15 +37,13 @@ internal class RuntimeScriptTerminal(
 }
 
 internal class RuntimeScriptFileSystem(
-    private val runtime: ComputerRuntime
+    private val runtime: ComputerRuntime,
+    private val workingDirectory: String
 ) : KCraftFileSystem {
 
-    private val fileSystem
-        get() = runtime.fileSystem
-
     private fun resolve(path: String): String =
-        fileSystem.normalizePath(
-            runtime.workingDirectory,
+        runtime.fileSystem.normalizePath(
+            workingDirectory,
             path
         )
 

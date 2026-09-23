@@ -1,6 +1,7 @@
 package org.soyuz.kcraft.computer.process
 
 import org.soyuz.kcraft.computer.ComputerRuntime
+import org.soyuz.kcraft.computer.RuntimeScriptContext
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
@@ -9,7 +10,6 @@ import kotlin.script.experimental.api.ResultValue
 import kotlin.script.experimental.api.ResultWithDiagnostics
 import kotlin.script.experimental.api.ScriptDiagnostic
 import kotlin.script.experimental.api.valueOrNull
-import kotlin.text.set
 
 class KCraftProcessManager(
     private val runtime: ComputerRuntime
@@ -27,13 +27,16 @@ class KCraftProcessManager(
         path: String,
         source: String
     ): KCraftProcess {
+        val workingDirectory =
+            runtime.workingDirectory
+
         val process = KCraftProcess(
             pid = nextPid.getAndIncrement(),
-            path = path
+            path = path,
+            workingDirectory = workingDirectory,
         )
 
         processes[process.pid] = process
-
 
         process.future = executor.submit {
             execute(
@@ -57,11 +60,19 @@ class KCraftProcessManager(
         process.state =
             KCraftProcessState.RUNNING
 
+
+        val context =
+            RuntimeScriptContext(
+                runtime,
+                process.workingDirectory,
+            )
+
         try {
             val result =
                 runtime.kotlin.execute(
                     source = source,
-                    name = process.path
+                    name = process.path,
+                    context = context,
                 )
 
             process.result = result
@@ -119,8 +130,10 @@ class KCraftProcessManager(
                 it.severity >= ScriptDiagnostic.Severity.WARNING
             }
             .forEach { diagnostic ->
-                runtime.terminal.appendLine(
-                    formatDiagnostic(diagnostic)
+                runtime.submitRequest(
+                    ComputerRequest.TerminalOutput(
+                        formatDiagnostic(diagnostic)
+                    )
                 )
             }
 
@@ -132,8 +145,10 @@ class KCraftProcessManager(
             evaluation.returnValue
 
         if (returnValue is ResultValue.Error) {
-            runtime.terminal.appendLine(
-                "error: ${formatException(returnValue.error)}"
+            runtime.submitRequest(
+                ComputerRequest.TerminalOutput(
+                    "error: ${formatException(returnValue.error)}"
+                )
             )
         }
     }

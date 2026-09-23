@@ -28,7 +28,7 @@ class ComputerRuntime(
 
     val environment = KShEnvironment(this)
     val interpreter = KShInterpreter(this)
-    val kotlin = KotlinScriptRuntime(RuntimeScriptContext(this))
+    val kotlin = KotlinScriptRuntime()
     val processes = KCraftProcessManager(this)
     private val requests =
         ConcurrentLinkedQueue<ComputerRequest>()

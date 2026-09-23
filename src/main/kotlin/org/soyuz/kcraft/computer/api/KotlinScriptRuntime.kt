@@ -7,15 +7,15 @@ import kotlin.script.experimental.api.constructorArgs
 import kotlin.script.experimental.host.toScriptSource
 import kotlin.script.experimental.jvmhost.BasicJvmScriptingHost
 
-class KotlinScriptRuntime(
-    private val context: KCraftScriptContext
-) {
+class KotlinScriptRuntime {
 
-    private val host = BasicJvmScriptingHost()
+    private val host =
+        BasicJvmScriptingHost()
 
     fun execute(
         source: String,
-        name: String
+        name: String,
+        context: KCraftScriptContext
     ): ResultWithDiagnostics<EvaluationResult> =
         host.eval(
             source.toScriptSource(name),
