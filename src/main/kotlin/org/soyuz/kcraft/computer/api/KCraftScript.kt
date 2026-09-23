@@ -5,4 +5,7 @@ abstract class KCraftScript(
 ) {
     val terminal: KCraftTerminal
         get() = context.terminal
+
+    val files: KCraftFileSystem
+        get() = context.files
 }
