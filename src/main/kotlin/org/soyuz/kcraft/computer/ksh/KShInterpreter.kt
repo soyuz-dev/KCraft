@@ -1,11 +1,6 @@
 package org.soyuz.kcraft.computer.ksh
 
 import org.soyuz.kcraft.computer.ComputerRuntime
-import kotlin.script.experimental.api.EvaluationResult
-import kotlin.script.experimental.api.ResultValue
-import kotlin.script.experimental.api.ResultWithDiagnostics
-import kotlin.script.experimental.api.ScriptDiagnostic
-import kotlin.script.experimental.api.valueOrNull
 
 class KShInterpreter(
     private val runtime: ComputerRuntime
@@ -39,7 +34,10 @@ class KShInterpreter(
         "append" to "Append text to a file",
         "appendln" to "Append a line to a file",
 
-        "pico" to "Edit a file with Pico"
+        "pico" to "Edit a file with Pico",
+
+        "run" to "Run a Kotlin program",
+        "ps" to "List processes",
     )
 
     fun executeLine(source: String) {
@@ -61,6 +59,7 @@ class KShInterpreter(
             "clear" -> clear(args)
             "source" -> source(args, sourceDepth)
             "run" -> run(args)
+            "ps" -> ps(args)
 
             "touch" -> touch(args)
             "mkdir" -> mkdir(args)
@@ -432,83 +431,37 @@ class KShInterpreter(
         val source =
             fileSystem.readFile(path)
 
-        val result =
-            runtime.kotlin.execute(
-                source = source,
-                name = path
+        val process =
+            runtime.processes.start(
+                path = path,
+                source = source
             )
 
-        printResult(result)
+        terminal.appendLine(
+            "Started process ${process.pid}"
+        )
     }
 
-    private fun formatDiagnostic(
-        diagnostic: ScriptDiagnostic
-    ): String {
-        val location = diagnostic.location
-
-        val severity = when (diagnostic.severity) {
-            ScriptDiagnostic.Severity.FATAL -> "fatal"
-            ScriptDiagnostic.Severity.ERROR -> "error"
-            ScriptDiagnostic.Severity.WARNING -> "warning"
-            ScriptDiagnostic.Severity.INFO -> "info"
-            ScriptDiagnostic.Severity.DEBUG -> "debug"
+    private fun ps(args: List<String>) {
+        if (args.isNotEmpty()) {
+            terminal.appendLine(
+                "ps: expected no arguments"
+            )
+            return
         }
 
-        val message =
-            diagnostic.exception?.let(::formatException)
-                ?: diagnostic.message
+        terminal.appendLine(
+            "PID STATE PROGRAM"
+        )
 
-        return if (location != null) {
-            "${location.start.line}:${location.start.col}: " +
-                    "$severity: $message"
-        } else {
-            "$severity: $message"
-        }
-    }
-
-    private fun printResult(
-        result: ResultWithDiagnostics<EvaluationResult>
-    ) {
-        result.reports
-            .filter {
-                it.severity >= ScriptDiagnostic.Severity.WARNING
-            }
-            .forEach { diagnostic ->
+        runtime.processes.list()
+            .forEach { process ->
                 terminal.appendLine(
-                    formatDiagnostic(diagnostic)
+                    "${process.pid} " +
+                            "${process.state} " +
+                            process.path
                 )
             }
-
-        val evaluation = result.valueOrNull()
-            ?: return
-
-        when (val returnValue = evaluation.returnValue) {
-            is ResultValue.Error -> {
-                val exception = returnValue.error
-
-                terminal.appendLine(
-                    "error: ${formatException(exception)}"
-                )
-            }
-
-            else -> Unit
-        }
     }
 
-    private fun formatException(
-        throwable: Throwable
-    ): String {
-        val type =
-            throwable::class.simpleName
-                ?: "Exception"
-
-        val message =
-            throwable.message
-
-        return if (message.isNullOrBlank()) {
-            type
-        } else {
-            "$type: $message"
-        }
-    }
 }

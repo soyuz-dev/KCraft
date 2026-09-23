@@ -3,6 +3,7 @@ package org.soyuz.kcraft.computer
 import org.soyuz.kcraft.computer.api.KotlinScriptRuntime
 import org.soyuz.kcraft.computer.ksh.KShEnvironment
 import org.soyuz.kcraft.computer.ksh.KShInterpreter
+import org.soyuz.kcraft.computer.process.KCraftProcessManager
 
 class ComputerRuntime(
     val terminal: Terminal,
@@ -23,6 +24,7 @@ class ComputerRuntime(
     val environment = KShEnvironment(this)
     val interpreter = KShInterpreter(this)
     val kotlin = KotlinScriptRuntime(RuntimeScriptContext(this))
+    val processes = KCraftProcessManager(this)
 
     fun tick() {
         if (!booted) return
