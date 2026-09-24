@@ -11,9 +11,9 @@ version = project.property("mod_version") as String
 group = project.property("maven_group") as String
 
 
-val minecraftVersion: String by project
-val loaderVersion: String by project
-val kotlinLoaderVersion: String by project
+val minecraftVersion: String = project.property("minecraft_version") as String
+val loaderVersion: String = project.property("loader_version") as String
+val kotlinLoaderVersion: String = project.property("kotlin_loader_version") as String
 val kotlinVersion: String = "2.4.10"
 
 base {
