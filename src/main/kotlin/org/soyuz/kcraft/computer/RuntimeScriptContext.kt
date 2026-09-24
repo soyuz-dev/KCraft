@@ -1,11 +1,10 @@
 package org.soyuz.kcraft.computer
 
-import org.soyuz.kcraft.computer.api.KCraftEnvironment
-import org.soyuz.kcraft.computer.api.KCraftScriptContext
-import org.soyuz.kcraft.computer.api.KCraftTerminal
-import org.soyuz.kcraft.computer.api.KCraftFileSystem
+import org.soyuz.kcraft.computer.api.*
 import org.soyuz.kcraft.computer.api.minecraft.KCraftBlock
+import org.soyuz.kcraft.computer.api.minecraft.KCraftPosition
 import org.soyuz.kcraft.computer.api.minecraft.KCraftWorld
+import org.soyuz.kcraft.computer.process.ComputerInfoRequest
 import org.soyuz.kcraft.computer.process.ComputerRequest
 import org.soyuz.kcraft.computer.process.FileRequest
 import org.soyuz.kcraft.computer.process.KCraftProcess
@@ -29,6 +28,9 @@ internal class RuntimeScriptContext(
 
     override val world: KCraftWorld =
         RuntimeScriptWorld(runtime)
+
+    override val computer: KCraftComputer =
+        RuntimeScriptComputer(runtime)
 }
 
 internal class RuntimeScriptTerminal(
@@ -199,24 +201,40 @@ internal class RuntimeScriptWorld(
 ) : KCraftWorld {
 
     override fun blockAt(
-        x: Int,
-        y: Int,
-        z: Int
+        position: KCraftPosition
     ): KCraftBlock {
         val result =
             CompletableFuture<KCraftBlock>()
 
         runtime.submitRequest(
             WorldRequest.GetBlock(
-                x = x,
-                y = y,
-                z = z,
+                x = position.x,
+                y = position.y,
+                z = position.z,
                 result = result
             )
         )
 
         return result.await()
     }
+}
+
+internal class RuntimeScriptComputer(
+    private val runtime: ComputerRuntime
+): KCraftComputer {
+    override val position: KCraftPosition
+        get() {
+            val result =
+                CompletableFuture<KCraftPosition>()
+
+            runtime.submitRequest(
+                ComputerInfoRequest.GetSelfPosition(
+                    result = result
+                )
+            )
+
+            return result.await()
+        }
 }
 
 private fun <T> CompletableFuture<T>.await(): T =

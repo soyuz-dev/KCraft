@@ -5,15 +5,16 @@ import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.server.level.ServerLevel
 import org.soyuz.kcraft.computer.api.KotlinScriptRuntime
 import org.soyuz.kcraft.computer.api.minecraft.KCraftBlock
+import org.soyuz.kcraft.computer.api.minecraft.KCraftPosition
 import org.soyuz.kcraft.computer.ksh.KShEnvironment
 import org.soyuz.kcraft.computer.ksh.KShInterpreter
+import org.soyuz.kcraft.computer.process.ComputerInfoRequest
 import org.soyuz.kcraft.computer.process.ComputerRequest
 import org.soyuz.kcraft.computer.process.FileRequest
 import org.soyuz.kcraft.computer.process.KCraftProcessManager
 import org.soyuz.kcraft.computer.process.WorldRequest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
-import kotlin.script.experimental.api.makeFailureResult
 
 class ComputerRuntime(
     val terminal: Terminal,
@@ -154,6 +155,9 @@ class ComputerRuntime(
 
                 is WorldRequest ->
                     processWorldRequest(request)
+
+                is ComputerInfoRequest ->
+                    processComputerInfoRequest(request)
             }
         }
 
@@ -224,9 +228,23 @@ class ComputerRuntime(
                     )
                 }
             }
+
         }
     }
 
+    private fun processComputerInfoRequest(request: ComputerInfoRequest) {
+        when (request) {
+            is ComputerInfoRequest.GetSelfPosition -> {
+                complete(request.result) {
+                    KCraftPosition(
+                        position.x,
+                        position.y,
+                        position.z
+                    )
+                }
+            }
+        }
+    }
     private inline fun <T> complete(
         future: CompletableFuture<T>,
         operation: () -> T

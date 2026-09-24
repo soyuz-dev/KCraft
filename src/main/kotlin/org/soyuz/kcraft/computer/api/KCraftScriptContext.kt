@@ -7,4 +7,5 @@ interface KCraftScriptContext {
     val files: KCraftFileSystem
     val env: KCraftEnvironment
     val world: KCraftWorld
+    val computer: KCraftComputer
 }
