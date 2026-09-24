@@ -27,13 +27,12 @@ class KCraftProcessManager(
         path: String,
         source: String
     ): KCraftProcess {
-        val workingDirectory =
-            runtime.workingDirectory
 
         val process = KCraftProcess(
             pid = nextPid.getAndIncrement(),
             path = path,
-            workingDirectory = workingDirectory,
+            workingDirectory = runtime.workingDirectory,
+            environment = runtime.environment.snapshot()
         )
 
         processes[process.pid] = process
@@ -64,7 +63,7 @@ class KCraftProcessManager(
         val context =
             RuntimeScriptContext(
                 runtime,
-                process.workingDirectory,
+                process,
             )
 
         try {

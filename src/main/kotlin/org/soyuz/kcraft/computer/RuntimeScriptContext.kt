@@ -6,22 +6,23 @@ import org.soyuz.kcraft.computer.api.KCraftTerminal
 import org.soyuz.kcraft.computer.api.KCraftFileSystem
 import org.soyuz.kcraft.computer.process.ComputerRequest
 import org.soyuz.kcraft.computer.process.FileRequest
+import org.soyuz.kcraft.computer.process.KCraftProcess
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 
 internal class RuntimeScriptContext(
     runtime: ComputerRuntime,
-    workingDirectory: String
+    process: KCraftProcess
 ) : KCraftScriptContext {
 
     override val terminal: KCraftTerminal =
         RuntimeScriptTerminal(runtime)
 
     override val files: KCraftFileSystem =
-        RuntimeScriptFileSystem(runtime, workingDirectory)
+        RuntimeScriptFileSystem(runtime, process.workingDirectory)
 
     override val env: KCraftEnvironment =
-        RuntimeScriptEnvironment(runtime)
+        RuntimeScriptEnvironment(process)
 
 }
 
@@ -173,11 +174,18 @@ internal class RuntimeScriptFileSystem(
 }
 
 internal class RuntimeScriptEnvironment(
-    private val runtime: ComputerRuntime
+    private val process: KCraftProcess
 ) : KCraftEnvironment {
 
     override fun get(name: String): String? =
-        runtime.environment.get(name)
+        when (name) {
+            "PWD" ->
+                process.workingDirectory
+            "PID" ->
+                process.pid.toString()
+            else ->
+                process.environment[name]
+        }
 }
 
 private fun <T> CompletableFuture<T>.await(): T =

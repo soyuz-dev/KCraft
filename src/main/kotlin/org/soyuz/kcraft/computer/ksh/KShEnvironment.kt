@@ -23,4 +23,7 @@ class KShEnvironment(
     fun set(name: String, value: String) {
         variables[name] = value
     }
+
+    fun snapshot(): Map<String, String> =
+        variables.toMap()
 }

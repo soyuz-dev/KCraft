@@ -15,6 +15,12 @@ class ComputerRuntime(
     val fileSystem: FileSystem
 ) {
 
+
+    companion object {
+        private const val MAX_REQUESTS_PER_TICK = 128
+    }
+
+
     var activeMode: ComputerMode = terminal
         private set
 
@@ -125,15 +131,19 @@ class ComputerRuntime(
     private fun processRequests(): Boolean {
         var changed = false
 
-        while (true) {
-            when (val request = requests.poll() ?: break) {
+        repeat(MAX_REQUESTS_PER_TICK) {
+            val request =
+                requests.poll()
+                    ?: return changed
 
+            when (request) {
                 is ComputerRequest.TerminalOutput -> {
                     terminal.appendLine(request.text)
                     changed = true
                 }
 
-                is FileRequest -> processFileRequest(request)
+                is FileRequest ->
+                    processFileRequest(request)
             }
         }
 

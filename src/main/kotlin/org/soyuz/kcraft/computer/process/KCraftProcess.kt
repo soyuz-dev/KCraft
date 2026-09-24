@@ -7,7 +7,8 @@ import kotlin.script.experimental.api.ResultWithDiagnostics
 class KCraftProcess(
     val pid: Int,
     val path: String,
-    val workingDirectory: String
+    val workingDirectory: String,
+    val environment: Map<String, String>
 ) {
     @Volatile
     var state: KCraftProcessState =
