@@ -4,9 +4,12 @@ import org.soyuz.kcraft.computer.api.KCraftEnvironment
 import org.soyuz.kcraft.computer.api.KCraftScriptContext
 import org.soyuz.kcraft.computer.api.KCraftTerminal
 import org.soyuz.kcraft.computer.api.KCraftFileSystem
+import org.soyuz.kcraft.computer.api.minecraft.KCraftBlock
+import org.soyuz.kcraft.computer.api.minecraft.KCraftWorld
 import org.soyuz.kcraft.computer.process.ComputerRequest
 import org.soyuz.kcraft.computer.process.FileRequest
 import org.soyuz.kcraft.computer.process.KCraftProcess
+import org.soyuz.kcraft.computer.process.WorldRequest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 
@@ -24,6 +27,8 @@ internal class RuntimeScriptContext(
     override val env: KCraftEnvironment =
         RuntimeScriptEnvironment(process)
 
+    override val world: KCraftWorld =
+        RuntimeScriptWorld(runtime)
 }
 
 internal class RuntimeScriptTerminal(
@@ -186,6 +191,32 @@ internal class RuntimeScriptEnvironment(
             else ->
                 process.environment[name]
         }
+}
+
+
+internal class RuntimeScriptWorld(
+    private val runtime: ComputerRuntime
+) : KCraftWorld {
+
+    override fun blockAt(
+        x: Int,
+        y: Int,
+        z: Int
+    ): KCraftBlock {
+        val result =
+            CompletableFuture<KCraftBlock>()
+
+        runtime.submitRequest(
+            WorldRequest.GetBlock(
+                x = x,
+                y = y,
+                z = z,
+                result = result
+            )
+        )
+
+        return result.await()
+    }
 }
 
 private fun <T> CompletableFuture<T>.await(): T =

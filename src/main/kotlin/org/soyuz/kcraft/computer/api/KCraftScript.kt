@@ -11,4 +11,7 @@ abstract class KCraftScript(
 
     val env
         get() = context.env
+
+    val world
+        get() = context.world
 }

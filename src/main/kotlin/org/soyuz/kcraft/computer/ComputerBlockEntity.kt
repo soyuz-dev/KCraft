@@ -87,8 +87,10 @@ class ComputerBlockEntity(
             terminal = Terminal(),
             fileSystem = FileSystem(
                 worldRoot,
-                computerId
-            )
+                computerId,
+            ),
+            serverLevel,
+            blockPos
         )
     }
 

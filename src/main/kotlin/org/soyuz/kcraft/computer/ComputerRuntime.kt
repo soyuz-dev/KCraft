@@ -1,18 +1,25 @@
 package org.soyuz.kcraft.computer
 
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.server.level.ServerLevel
 import org.soyuz.kcraft.computer.api.KotlinScriptRuntime
+import org.soyuz.kcraft.computer.api.minecraft.KCraftBlock
 import org.soyuz.kcraft.computer.ksh.KShEnvironment
 import org.soyuz.kcraft.computer.ksh.KShInterpreter
 import org.soyuz.kcraft.computer.process.ComputerRequest
 import org.soyuz.kcraft.computer.process.FileRequest
 import org.soyuz.kcraft.computer.process.KCraftProcessManager
+import org.soyuz.kcraft.computer.process.WorldRequest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.script.experimental.api.makeFailureResult
 
 class ComputerRuntime(
     val terminal: Terminal,
-    val fileSystem: FileSystem
+    val fileSystem: FileSystem,
+    internal val level: ServerLevel,
+    internal val position: BlockPos
 ) {
 
 
@@ -144,6 +151,9 @@ class ComputerRuntime(
 
                 is FileRequest ->
                     processFileRequest(request)
+
+                is WorldRequest ->
+                    processWorldRequest(request)
             }
         }
 
@@ -190,6 +200,29 @@ class ComputerRuntime(
 
             is FileRequest.DeleteDirectory -> {
                 complete(request.result, { fileSystem.deleteDirectory(request.path) })
+            }
+        }
+    }
+
+    private fun processWorldRequest(request: WorldRequest) {
+        when (request) {
+            is WorldRequest.GetBlock -> {
+                complete(request.result) {
+                    val state =
+                        level.getBlockState(
+                            BlockPos(
+                                request.x,
+                                request.y,
+                                request.z
+                            )
+                        )
+
+                    KCraftBlock(
+                        id = BuiltInRegistries.BLOCK
+                            .getKey(state.block)
+                            .toString()
+                    )
+                }
             }
         }
     }
