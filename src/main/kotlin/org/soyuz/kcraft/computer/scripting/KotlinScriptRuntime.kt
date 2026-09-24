@@ -1,5 +1,6 @@
-package org.soyuz.kcraft.computer.api
+package org.soyuz.kcraft.computer.scripting
 
+import org.soyuz.kcraft.computer.api.KCraftScriptContext
 import kotlin.script.experimental.api.EvaluationResult
 import kotlin.script.experimental.api.ResultWithDiagnostics
 import kotlin.script.experimental.api.ScriptEvaluationConfiguration

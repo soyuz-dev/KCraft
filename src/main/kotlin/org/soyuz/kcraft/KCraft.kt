@@ -3,6 +3,8 @@ package org.soyuz.kcraft
 import net.fabricmc.api.ModInitializer
 import net.minecraft.resources.Identifier
 import org.slf4j.LoggerFactory
+import org.soyuz.kcraft.computer.api.KCraftScript
+import org.soyuz.kcraft.computer.api.KCraftScriptContext
 import org.soyuz.kcraft.network.KCraftPackets
 import org.soyuz.kcraft.worldgen.KCraftWorldGeneration
 
@@ -22,7 +24,34 @@ class KCraft : ModInitializer {
         KCraftPackets.initialize()
         KCraftMenus.initialize()
         KCraftWorldGeneration.initialize()
+
+        printCodeSource(
+            "KCraftScript",
+            KCraftScript::class.java
+        )
+
+        printCodeSource(
+            "KCraftScriptContext",
+            KCraftScriptContext::class.java
+        )
+
+        printCodeSource(
+            "Kotlin Unit",
+            Unit::class.java
+        )
+
         LOGGER.info("KCraft Initialised")
     }
-
+    private fun printCodeSource(
+        name: String,
+        clazz: Class<*>
+    ) {
+        println(
+            "$name -> ${
+                clazz.protectionDomain
+                    .codeSource
+                    ?.location
+            }"
+        )
+    }
 }

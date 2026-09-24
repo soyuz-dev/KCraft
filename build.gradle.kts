@@ -52,6 +52,8 @@ tasks.test {
 }
 
 dependencies {
+    implementation(project(":scripting-api"))
+
     minecraft("com.mojang:minecraft:$minecraftVersion")
     implementation("net.fabricmc:fabric-loader:$loaderVersion")
     implementation("net.fabricmc:fabric-language-kotlin:$kotlinLoaderVersion")

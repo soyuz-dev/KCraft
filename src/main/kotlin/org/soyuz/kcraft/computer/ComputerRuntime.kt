@@ -3,7 +3,7 @@ package org.soyuz.kcraft.computer
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.server.level.ServerLevel
-import org.soyuz.kcraft.computer.api.KotlinScriptRuntime
+import org.soyuz.kcraft.computer.scripting.KotlinScriptRuntime
 import org.soyuz.kcraft.computer.api.minecraft.KCraftBlock
 import org.soyuz.kcraft.computer.api.minecraft.KCraftPosition
 import org.soyuz.kcraft.computer.ksh.KShEnvironment

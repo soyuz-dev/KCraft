@@ -1,6 +1,10 @@
 package org.soyuz.kcraft.computer
 
-import org.soyuz.kcraft.computer.api.*
+import org.soyuz.kcraft.computer.api.KCraftComputer
+import org.soyuz.kcraft.computer.api.KCraftEnvironment
+import org.soyuz.kcraft.computer.api.KCraftFileSystem
+import org.soyuz.kcraft.computer.api.KCraftScriptContext
+import org.soyuz.kcraft.computer.api.KCraftTerminal
 import org.soyuz.kcraft.computer.api.minecraft.KCraftBlock
 import org.soyuz.kcraft.computer.api.minecraft.KCraftPosition
 import org.soyuz.kcraft.computer.api.minecraft.KCraftWorld

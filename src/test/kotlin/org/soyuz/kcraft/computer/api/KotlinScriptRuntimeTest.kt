@@ -3,6 +3,7 @@ package org.soyuz.kcraft.computer.api
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.soyuz.kcraft.computer.scripting.KotlinScriptRuntime
 import kotlin.script.experimental.api.ResultWithDiagnostics
 
 class KotlinScriptRuntimeTest {
