@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour.Properties
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.BlockHitResult
 import org.soyuz.kcraft.KCraftBlockEntities
+import org.soyuz.kcraft.computer.api.minecraft.KCraftDirection
 
 class ComputerBlock(properties: Properties) : BaseEntityBlock(properties) {
 
@@ -98,5 +99,15 @@ class ComputerBlock(properties: Properties) : BaseEntityBlock(properties) {
     }
 
 
+    internal fun Direction.toKCraft(): KCraftDirection? =
+        when (this) {
+            Direction.NORTH -> KCraftDirection.NORTH
+            Direction.SOUTH -> KCraftDirection.SOUTH
+            Direction.EAST -> KCraftDirection.EAST
+            Direction.WEST -> KCraftDirection.WEST
+
+            Direction.UP,
+            Direction.DOWN -> null
+        }
 
 }

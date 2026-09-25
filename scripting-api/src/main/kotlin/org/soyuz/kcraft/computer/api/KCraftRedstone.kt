@@ -9,4 +9,10 @@ interface KCraftRedstone {
         direction: KCraftDirection,
         strength: Int
     )
+
+    fun clear() {
+        KCraftDirection.entries.forEach {
+            write(it, 0)
+        }
+    }
 }

@@ -1,8 +1,11 @@
 package org.soyuz.kcraft.computer
 
 import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.EntitySpawnReason
+import org.soyuz.kcraft.KCraftEntities
 import org.soyuz.kcraft.computer.scripting.KotlinScriptRuntime
 import org.soyuz.kcraft.computer.api.minecraft.KCraftBlock
 import org.soyuz.kcraft.computer.api.minecraft.KCraftDirection
@@ -15,6 +18,7 @@ import org.soyuz.kcraft.computer.process.FileRequest
 import org.soyuz.kcraft.computer.process.KCraftProcessManager
 import org.soyuz.kcraft.computer.process.RedstoneRequest
 import org.soyuz.kcraft.computer.process.WorldRequest
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
 
@@ -22,8 +26,14 @@ class ComputerRuntime(
     val terminal: Terminal,
     val fileSystem: FileSystem,
     internal val level: ServerLevel,
-    internal val position: BlockPos
+    internal val position: BlockPos,
 ) {
+
+    val id: UUID =
+        computerId(
+            level,
+            position
+        )
 
 
     companion object {
@@ -311,4 +321,48 @@ class ComputerRuntime(
             minecraftDirection
         )
     }
+
+    fun summonRubyGolem(): Boolean {
+        val golem =
+            KCraftEntities.RUBY_GOLEM.create(
+                level,
+                EntitySpawnReason.MOB_SUMMONED
+            ) ?: return false
+
+        golem.bindToComputer(
+            computerId = id
+        )
+
+        golem.setPos(
+            position.x + 0.5,
+            position.y + 1.0,
+            position.z + 0.5
+        )
+
+        return level.addFreshEntity(golem)
+    }
+
+    private fun computerId(
+        level: ServerLevel,
+        position: BlockPos
+    ): UUID {
+        val identity =
+            "${level.dimension().identifier()}:${position.x},${position.y},${position.z}"
+
+        return UUID.nameUUIDFromBytes(
+            identity.toByteArray(
+                Charsets.UTF_8
+            )
+        )
+    }
+
+
+    internal fun KCraftDirection.toMinecraft(): Direction =
+        when (this) {
+            KCraftDirection.NORTH -> Direction.NORTH
+            KCraftDirection.SOUTH -> Direction.SOUTH
+            KCraftDirection.EAST -> Direction.EAST
+            KCraftDirection.WEST -> Direction.WEST
+        }
 }
+

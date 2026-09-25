@@ -125,7 +125,7 @@ class ComputerBlockEntity(
                 computerId,
             ),
             serverLevel,
-            blockPos
+            blockPos,
         )
     }
 
@@ -179,25 +179,5 @@ class ComputerBlockEntity(
             syncDisplay()
         }
     }
-
-
 }
 
-internal fun KCraftDirection.toMinecraft(): Direction =
-    when (this) {
-        KCraftDirection.NORTH -> Direction.NORTH
-        KCraftDirection.SOUTH -> Direction.SOUTH
-        KCraftDirection.EAST -> Direction.EAST
-        KCraftDirection.WEST -> Direction.WEST
-    }
-
-internal fun Direction.toKCraft(): KCraftDirection? =
-    when (this) {
-        Direction.NORTH -> KCraftDirection.NORTH
-        Direction.SOUTH -> KCraftDirection.SOUTH
-        Direction.EAST -> KCraftDirection.EAST
-        Direction.WEST -> KCraftDirection.WEST
-
-        Direction.UP,
-        Direction.DOWN -> null
-    }

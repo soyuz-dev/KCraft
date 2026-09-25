@@ -24,34 +24,9 @@ class KCraft : ModInitializer {
         KCraftPackets.initialize()
         KCraftMenus.initialize()
         KCraftWorldGeneration.initialize()
-
-        printCodeSource(
-            "KCraftScript",
-            KCraftScript::class.java
-        )
-
-        printCodeSource(
-            "KCraftScriptContext",
-            KCraftScriptContext::class.java
-        )
-
-        printCodeSource(
-            "Kotlin Unit",
-            Unit::class.java
-        )
+        KCraftEntities.initialize()
 
         LOGGER.info("KCraft Initialised")
     }
-    private fun printCodeSource(
-        name: String,
-        clazz: Class<*>
-    ) {
-        println(
-            "$name -> ${
-                clazz.protectionDomain
-                    .codeSource
-                    ?.location
-            }"
-        )
-    }
+
 }

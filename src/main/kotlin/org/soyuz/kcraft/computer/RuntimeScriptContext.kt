@@ -8,6 +8,7 @@ import org.soyuz.kcraft.computer.api.KCraftScriptContext
 import org.soyuz.kcraft.computer.api.KCraftTerminal
 import org.soyuz.kcraft.computer.api.minecraft.KCraftBlock
 import org.soyuz.kcraft.computer.api.minecraft.KCraftDirection
+import org.soyuz.kcraft.computer.api.minecraft.KCraftGolem
 import org.soyuz.kcraft.computer.api.minecraft.KCraftPosition
 import org.soyuz.kcraft.computer.api.minecraft.KCraftWorld
 import org.soyuz.kcraft.computer.process.ComputerInfoRequest
@@ -232,6 +233,10 @@ internal class RuntimeScriptWorld(
 internal class RuntimeScriptComputer(
     private val runtime: ComputerRuntime
 ): KCraftComputer {
+
+    override val golems: List<KCraftGolem>
+        get() = mutableListOf()
+
     override val position: KCraftPosition
         get() {
             val result =
@@ -288,6 +293,9 @@ internal class RuntimeScriptRedstone(
 
         result.await()
     }
+
+
+
 }
 
 private fun <T> CompletableFuture<T>.await(): T =
