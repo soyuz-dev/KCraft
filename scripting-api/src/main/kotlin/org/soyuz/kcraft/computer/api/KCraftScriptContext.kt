@@ -8,4 +8,5 @@ interface KCraftScriptContext {
     val env: KCraftEnvironment
     val world: KCraftWorld
     val computer: KCraftComputer
+    val redstone: KCraftRedstone
 }

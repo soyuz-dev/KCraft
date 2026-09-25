@@ -3,15 +3,18 @@ package org.soyuz.kcraft.computer
 import org.soyuz.kcraft.computer.api.KCraftComputer
 import org.soyuz.kcraft.computer.api.KCraftEnvironment
 import org.soyuz.kcraft.computer.api.KCraftFileSystem
+import org.soyuz.kcraft.computer.api.KCraftRedstone
 import org.soyuz.kcraft.computer.api.KCraftScriptContext
 import org.soyuz.kcraft.computer.api.KCraftTerminal
 import org.soyuz.kcraft.computer.api.minecraft.KCraftBlock
+import org.soyuz.kcraft.computer.api.minecraft.KCraftDirection
 import org.soyuz.kcraft.computer.api.minecraft.KCraftPosition
 import org.soyuz.kcraft.computer.api.minecraft.KCraftWorld
 import org.soyuz.kcraft.computer.process.ComputerInfoRequest
 import org.soyuz.kcraft.computer.process.ComputerRequest
 import org.soyuz.kcraft.computer.process.FileRequest
 import org.soyuz.kcraft.computer.process.KCraftProcess
+import org.soyuz.kcraft.computer.process.RedstoneRequest
 import org.soyuz.kcraft.computer.process.WorldRequest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
@@ -35,6 +38,9 @@ internal class RuntimeScriptContext(
 
     override val computer: KCraftComputer =
         RuntimeScriptComputer(runtime)
+
+    override val redstone: KCraftRedstone =
+        RuntimeScriptRedstone(runtime)
 }
 
 internal class RuntimeScriptTerminal(
@@ -239,6 +245,49 @@ internal class RuntimeScriptComputer(
 
             return result.await()
         }
+}
+
+internal class RuntimeScriptRedstone(
+    private val runtime: ComputerRuntime
+) : KCraftRedstone {
+
+    override fun read(
+        direction: KCraftDirection
+    ): Int {
+        val result =
+            CompletableFuture<Int>()
+
+        runtime.submitRequest(
+            RedstoneRequest.Read(
+                direction,
+                result
+            )
+        )
+
+        return result.await()
+    }
+
+    override fun write(
+        direction: KCraftDirection,
+        strength: Int
+    ) {
+        require(strength in 0..15) {
+            "Redstone strength must be between 0 and 15"
+        }
+
+        val result =
+            CompletableFuture<Unit>()
+
+        runtime.submitRequest(
+            RedstoneRequest.Write(
+                direction,
+                strength,
+                result
+            )
+        )
+
+        result.await()
+    }
 }
 
 private fun <T> CompletableFuture<T>.await(): T =

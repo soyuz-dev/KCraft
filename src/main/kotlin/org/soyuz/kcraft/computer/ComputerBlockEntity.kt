@@ -2,6 +2,7 @@ package org.soyuz.kcraft.computer
 
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
@@ -15,6 +16,7 @@ import net.minecraft.world.level.storage.LevelResource
 import net.minecraft.world.level.storage.ValueInput
 import net.minecraft.world.level.storage.ValueOutput
 import org.soyuz.kcraft.KCraftBlockEntities
+import org.soyuz.kcraft.computer.api.minecraft.KCraftDirection
 import org.soyuz.kcraft.network.s2c.ComputerDisplayStatePayload
 import java.util.UUID
 
@@ -43,6 +45,39 @@ class ComputerBlockEntity(
         private set
 
     private var _runtime: ComputerRuntime? = null
+
+    private val redstoneOutputs =
+        mutableMapOf(
+            KCraftDirection.NORTH to 0,
+            KCraftDirection.SOUTH to 0,
+            KCraftDirection.EAST to 0,
+            KCraftDirection.WEST to 0
+        )
+
+    fun getRedstoneOutput(
+        direction: KCraftDirection
+    ): Int =
+        redstoneOutputs.getValue(direction)
+
+    fun setRedstoneOutput(
+        direction: KCraftDirection,
+        strength: Int
+    ) {
+        require(strength in 0..15)
+
+        if (redstoneOutputs[direction] == strength) {
+            return
+        }
+
+        redstoneOutputs[direction] = strength
+
+        setChanged()
+
+        level?.updateNeighborsAt(
+            blockPos,
+            blockState.block
+        )
+    }
 
     val runtime: ComputerRuntime
         get() = _runtime
@@ -144,4 +179,25 @@ class ComputerBlockEntity(
             syncDisplay()
         }
     }
+
+
 }
+
+internal fun KCraftDirection.toMinecraft(): Direction =
+    when (this) {
+        KCraftDirection.NORTH -> Direction.NORTH
+        KCraftDirection.SOUTH -> Direction.SOUTH
+        KCraftDirection.EAST -> Direction.EAST
+        KCraftDirection.WEST -> Direction.WEST
+    }
+
+internal fun Direction.toKCraft(): KCraftDirection? =
+    when (this) {
+        Direction.NORTH -> KCraftDirection.NORTH
+        Direction.SOUTH -> KCraftDirection.SOUTH
+        Direction.EAST -> KCraftDirection.EAST
+        Direction.WEST -> KCraftDirection.WEST
+
+        Direction.UP,
+        Direction.DOWN -> null
+    }

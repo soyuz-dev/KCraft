@@ -12,6 +12,7 @@ import org.soyuz.kcraft.computer.process.ComputerInfoRequest
 import org.soyuz.kcraft.computer.process.ComputerRequest
 import org.soyuz.kcraft.computer.process.FileRequest
 import org.soyuz.kcraft.computer.process.KCraftProcessManager
+import org.soyuz.kcraft.computer.process.RedstoneRequest
 import org.soyuz.kcraft.computer.process.WorldRequest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -158,6 +159,9 @@ class ComputerRuntime(
 
                 is ComputerInfoRequest ->
                     processComputerInfoRequest(request)
+
+                is RedstoneRequest ->
+                    processRedstoneRequest(request)
             }
         }
 
@@ -255,6 +259,32 @@ class ComputerRuntime(
             )
         } catch (e: Throwable) {
             future.completeExceptionally(e)
+        }
+    }
+
+    private fun processRedstoneRequest(
+        request: RedstoneRequest
+    ) {
+        when (request) {
+            is RedstoneRequest.Write -> {
+                complete(request.result) {
+                    val blockEntity =
+                        level.getBlockEntity(position)
+                                as? ComputerBlockEntity
+                            ?: error(
+                                "Computer block entity is unavailable"
+                            )
+
+                    blockEntity.setRedstoneOutput(
+                        request.direction,
+                        request.strength
+                    )
+                }
+            }
+
+            is RedstoneRequest.Read -> {
+
+            }
         }
     }
 }

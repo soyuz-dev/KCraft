@@ -4,6 +4,7 @@ import org.soyuz.kcraft.computer.api.KCraftScript
 import java.io.File
 import kotlin.script.experimental.api.ScriptCompilationConfiguration
 import kotlin.script.experimental.api.baseClass
+import kotlin.script.experimental.api.defaultImports
 import kotlin.script.experimental.api.dependencies
 import kotlin.script.experimental.jvm.JvmDependency
 import kotlin.script.experimental.jvm.jvm
@@ -12,6 +13,12 @@ object KCraftScriptCompilationConfiguration :
     ScriptCompilationConfiguration({
 
         baseClass(KCraftScript::class)
+
+        defaultImports(
+            "org.soyuz.kcraft.computer.api.*",
+            "org.soyuz.kcraft.computer.api.minecraft.*"
+        )
+
 
         jvm {
             dependencies(

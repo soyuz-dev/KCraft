@@ -14,4 +14,7 @@ abstract class KCraftScript(
 
     val world
         get() = context.world
+
+    val redstone
+        get() = context.redstone
 }
