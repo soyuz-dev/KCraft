@@ -5,6 +5,7 @@ import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.server.level.ServerLevel
 import org.soyuz.kcraft.computer.scripting.KotlinScriptRuntime
 import org.soyuz.kcraft.computer.api.minecraft.KCraftBlock
+import org.soyuz.kcraft.computer.api.minecraft.KCraftDirection
 import org.soyuz.kcraft.computer.api.minecraft.KCraftPosition
 import org.soyuz.kcraft.computer.ksh.KShEnvironment
 import org.soyuz.kcraft.computer.ksh.KShInterpreter
@@ -283,8 +284,31 @@ class ComputerRuntime(
             }
 
             is RedstoneRequest.Read -> {
-
+                complete(request.result) {
+                    readRedstoneInput(
+                        request.direction
+                    )
+                }
             }
         }
+    }
+
+    private fun readRedstoneInput(
+        direction: KCraftDirection
+    ): Int {
+        val minecraftDirection =
+            direction.toMinecraft()
+
+        val neighbourPos =
+            position.relative(minecraftDirection)
+
+        val neighbourState =
+            level.getBlockState(neighbourPos)
+
+        return neighbourState.getSignal(
+            level,
+            neighbourPos,
+            minecraftDirection
+        )
     }
 }
