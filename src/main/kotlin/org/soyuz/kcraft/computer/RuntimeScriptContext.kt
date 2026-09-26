@@ -14,6 +14,7 @@ import org.soyuz.kcraft.computer.api.minecraft.KCraftWorld
 import org.soyuz.kcraft.computer.process.ComputerInfoRequest
 import org.soyuz.kcraft.computer.process.ComputerRequest
 import org.soyuz.kcraft.computer.process.FileRequest
+import org.soyuz.kcraft.computer.process.GolemRequest
 import org.soyuz.kcraft.computer.process.KCraftProcess
 import org.soyuz.kcraft.computer.process.RedstoneRequest
 import org.soyuz.kcraft.computer.process.WorldRequest
@@ -235,7 +236,18 @@ internal class RuntimeScriptComputer(
 ): KCraftComputer {
 
     override val golems: List<KCraftGolem>
-        get() = mutableListOf()
+        get() {
+            val result =
+                CompletableFuture<List<KCraftGolem>>()
+
+            runtime.submitRequest(
+                GolemRequest.GetOwnedGolems(
+                    result
+                )
+            )
+
+            return result.await()
+        }
 
     override val position: KCraftPosition
         get() {

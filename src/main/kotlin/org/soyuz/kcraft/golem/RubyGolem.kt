@@ -4,6 +4,8 @@ import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.PathfinderMob
 import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraft.world.level.Level
+import net.minecraft.world.level.storage.ValueInput
+import net.minecraft.world.level.storage.ValueOutput
 import java.util.UUID
 
 class RubyGolem(
@@ -13,6 +15,31 @@ class RubyGolem(
     type,
     level
 ) {
+
+
+    override fun addAdditionalSaveData(
+        output: ValueOutput
+    ) {
+        super.addAdditionalSaveData(output)
+
+        parentComputerId?.let {
+            output.putString(
+                "ParentComputer",
+                it.toString()
+            )
+        }
+    }
+
+    override fun readAdditionalSaveData(
+        input: ValueInput
+    ) {
+        super.readAdditionalSaveData(input)
+
+        parentComputerId =
+            input.getString("ParentComputer")
+                .map(UUID::fromString)
+                .orElse(null)
+    }
 
     override fun registerGoals() {
         // Intentionally empty.
@@ -47,5 +74,9 @@ class RubyGolem(
         }
 
         parentComputerId = computerId
+
+        println(
+            "Ruby Golem $uuid bound to computer $computerId"
+        )
     }
 }

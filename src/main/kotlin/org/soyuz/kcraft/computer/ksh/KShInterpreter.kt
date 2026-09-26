@@ -82,6 +82,24 @@ class KShInterpreter(
 
             "help" -> help(args)
 
+            "summon" -> {
+                when (args.firstOrNull()) {
+                    "ruby_golem" -> {
+                        if (!runtime.summonRubyGolem()) {
+                            runtime.terminal.appendLine(
+                                "summon: failed to summon ruby golem"
+                            )
+                        }
+                    }
+
+                    else -> {
+                        runtime.terminal.appendLine(
+                            "usage: summon ruby_golem"
+                        )
+                    }
+                }
+            }
+
 
             else -> terminal.appendLine(
                 "ksh: command not found: $command"

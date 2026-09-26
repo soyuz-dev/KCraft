@@ -9,12 +9,14 @@ import org.soyuz.kcraft.KCraftEntities
 import org.soyuz.kcraft.computer.scripting.KotlinScriptRuntime
 import org.soyuz.kcraft.computer.api.minecraft.KCraftBlock
 import org.soyuz.kcraft.computer.api.minecraft.KCraftDirection
+import org.soyuz.kcraft.computer.api.minecraft.KCraftGolem
 import org.soyuz.kcraft.computer.api.minecraft.KCraftPosition
 import org.soyuz.kcraft.computer.ksh.KShEnvironment
 import org.soyuz.kcraft.computer.ksh.KShInterpreter
 import org.soyuz.kcraft.computer.process.ComputerInfoRequest
 import org.soyuz.kcraft.computer.process.ComputerRequest
 import org.soyuz.kcraft.computer.process.FileRequest
+import org.soyuz.kcraft.computer.process.GolemRequest
 import org.soyuz.kcraft.computer.process.KCraftProcessManager
 import org.soyuz.kcraft.computer.process.RedstoneRequest
 import org.soyuz.kcraft.computer.process.WorldRequest
@@ -58,6 +60,24 @@ class ComputerRuntime(
     val processes = KCraftProcessManager(this)
     private val requests =
         ConcurrentLinkedQueue<ComputerRequest>()
+    val golems =
+        level.getEntities(
+            KCraftEntities.RUBY_GOLEM
+        ) { golem ->
+            golem.parentComputerId == id
+        }
+
+    val snapshots =
+        golems.map { golem ->
+            KCraftGolem(
+                id = golem.uuid.toString(),
+                position = KCraftPosition(
+                    golem.blockX,
+                    golem.blockY,
+                    golem.blockZ
+                )
+            )
+        }
 
     fun submitRequest(request: ComputerRequest) {
         requests.add(request)
@@ -173,6 +193,9 @@ class ComputerRuntime(
 
                 is RedstoneRequest ->
                     processRedstoneRequest(request)
+
+                is GolemRequest ->
+                    processGolemRequest(request)
             }
         }
 
@@ -298,6 +321,31 @@ class ComputerRuntime(
                     readRedstoneInput(
                         request.direction
                     )
+                }
+            }
+        }
+    }
+
+    private fun processGolemRequest(
+        request: GolemRequest
+    ) {
+        when (request) {
+            is GolemRequest.GetOwnedGolems -> {
+                complete(request.result) {
+                    level.getEntities(
+                        KCraftEntities.RUBY_GOLEM
+                    ) { golem ->
+                        golem.parentComputerId == id
+                    }.map { golem ->
+                        KCraftGolem(
+                            id = golem.uuid.toString(),
+                            position = KCraftPosition(
+                                golem.blockX,
+                                golem.blockY,
+                                golem.blockZ
+                            )
+                        )
+                    }
                 }
             }
         }

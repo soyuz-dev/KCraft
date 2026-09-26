@@ -17,4 +17,7 @@ abstract class KCraftScript(
 
     val redstone
         get() = context.redstone
+
+    val computer
+        get() = context.computer
 }
