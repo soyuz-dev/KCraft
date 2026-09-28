@@ -44,7 +44,20 @@ fabricApi {
 }
 
 repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "GeckoLib"
+                url = uri(
+                    "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/"
+                )
+            }
+        }
 
+        filter {
+            includeGroupAndSubgroups("com.geckolib")
+        }
+    }
 }
 
 tasks.test {
@@ -52,19 +65,48 @@ tasks.test {
 }
 
 dependencies {
-    implementation(project(":scripting-api"))
+    implementation(
+        project(":scripting-api")
+    )
 
-    minecraft("com.mojang:minecraft:$minecraftVersion")
-    implementation("net.fabricmc:fabric-loader:$loaderVersion")
-    implementation("net.fabricmc:fabric-language-kotlin:$kotlinLoaderVersion")
-    implementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
+    minecraft(
+        "com.mojang:minecraft:$minecraftVersion"
+    )
 
-    implementation("org.jetbrains.kotlin:kotlin-scripting-common:$kotlinVersion")
-    implementation("org.jetbrains.kotlin:kotlin-scripting-jvm:$kotlinVersion")
-    implementation("org.jetbrains.kotlin:kotlin-scripting-jvm-host:$kotlinVersion")
+    implementation(
+        "net.fabricmc:fabric-loader:$loaderVersion"
+    )
 
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
+    implementation(
+        "net.fabricmc:fabric-language-kotlin:$kotlinLoaderVersion"
+    )
+
+    implementation(
+        "net.fabricmc.fabric-api:fabric-api:${
+            project.property("fabric_version")
+        }"
+    )
+
+    implementation(
+        "org.jetbrains.kotlin:kotlin-scripting-common:$kotlinVersion"
+    )
+    implementation(
+        "org.jetbrains.kotlin:kotlin-scripting-jvm:$kotlinVersion"
+    )
+    implementation(
+        "org.jetbrains.kotlin:kotlin-scripting-jvm-host:$kotlinVersion"
+    )
+
+    implementation(
+        "com.geckolib:geckolib-fabric-26.2:5.5.5"
+    )
+
+    testImplementation(
+        "org.junit.jupiter:junit-jupiter:5.10.0"
+    )
+    testImplementation(
+        "org.jetbrains.kotlin:kotlin-test"
+    )
 }
 
 tasks.processResources {
