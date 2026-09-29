@@ -362,7 +362,7 @@ class RubyGolem(
                 LocomotionAnimation.IDLE -> {
                     if (moving) {
                         // If movement interrupts a look-at animation,
-                        // forget that idle sub-state. When we next stop,
+                        // forget that idle substate. When we next stop,
                         // we begin from ordinary stationary idle.
                         idleAnimation =
                             IdleAnimation.STATIONARY
