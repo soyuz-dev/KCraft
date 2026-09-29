@@ -1,5 +1,6 @@
 package org.soyuz.kcraft.client
 
+import com.geckolib.loading.math.MolangQueries
 import com.geckolib.renderer.GeoEntityRenderer
 import net.fabricmc.api.ClientModInitializer
 import net.minecraft.client.gui.screens.MenuScreens
@@ -30,6 +31,18 @@ class KCraftClient : ClientModInitializer {
                 context,
                 KCraftEntities.RUBY_GOLEM
             )
+        }
+
+        MolangQueries.setActorVariable<RubyGolem>(
+            "query.kcraft_look_yaw"
+        ) { actor ->
+            actor.animatable.lookYaw
+        }
+
+        MolangQueries.setActorVariable<RubyGolem>(
+            "query.kcraft_look_pitch"
+        ) { actor ->
+            actor.animatable.lookPitch
         }
     }
 }
