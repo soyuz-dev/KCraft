@@ -10,6 +10,21 @@ Rather than implementing a separate virtual machine, KCraft runs real Kotlin/JVM
 
 **Current release: KCraft 0.2 Alpha: *KotlinCraft***
 
+**Development: KCraft 0.3 Preview**
+
+Development towards KCraft 0.3 is currently underway on the main branch.
+
+Current post-0.2 additions include:
+
+- Four-direction redstone input and output from Kotlin programs
+- Analogue redstone signal strengths from 0–15
+- Ruby Golems, persistent programmable workers associated with a parent computer
+- Computer-side discovery of associated Ruby Golems
+- A custom Ruby Golem model, texture and GeckoLib animation system
+- Procedural Ruby Golem idle behaviour, including looking towards nearby entities
+
+The 0.3 preview is a development snapshot rather than a stable release. Features, APIs and behaviour may change freely before 0.3 Alpha.
+
 ## Computers
 
 The Computer Block is the centre of KCraft's programmable systems.
@@ -119,6 +134,23 @@ terminal.println(
 World access is executed through KCraft's server-thread request system rather than exposing Minecraft objects directly to script threads.
 
 This is the foundation for future redstone, inventory, peripheral, networking and golem APIs.
+
+### Redstone (0.3 Preview)
+
+Kotlin programs can read and write redstone signals on the four horizontal sides of a computer.
+
+```kotlin
+val input =
+    redstone.read(KCraftDirection.WEST)
+
+redstone.write(
+    KCraftDirection.EAST,
+    input
+)
+```
+
+Signals use Minecraft's normal strength range of 0..15.
+Redstone access uses the same server-thread request system as other Minecraft world operations, allowing Kotlin processes to interact with redstone without directly accessing Minecraft implementation objects.
 
 ## Processes
 
@@ -383,13 +415,26 @@ Planned systems include:
 - Stronger script isolation
 - An installable and upgradeable operating environment
 
-### Golems
+### Ruby Golems
 
-A major long-term goal is programmable golems with capabilities comparable to Minecraft Education Edition's Agent.
+Ruby Golems are KCraft's programmable physical workers.
 
-Golems will be controlled by Kotlin programs running on host computers and may communicate wirelessly when equipped with appropriate hardware, provided they remain in ticking chunks.
+Unlike computers, which interact with the world through deliberately limited APIs, Ruby Golems are intended to perform physical tasks such as movement, block interaction and inventory access.
 
-KSh will provide orchestration around those programs.
+Early Ruby Golem support is now present in the 0.3 development preview.
+
+Ruby Golems currently:
+
+- Exist as persistent custom entities
+- Are associated with a parent KCraft computer
+- Can be discovered by Kotlin programs through their parent computer
+- Have a custom model and texture
+- Use GeckoLib for procedural and authored animation
+- React visually to nearby entities through idle attention behaviour
+
+Their control and interaction APIs are still under development.
+
+Longer-term, Ruby Golems are intended to provide capabilities comparable to Minecraft Education Edition's Agent. They will be controlled by Kotlin programs running on their parent computers and may eventually communicate wirelessly when equipped with appropriate hardware, provided they remain in ticking chunks.
 
 ## Development
 
