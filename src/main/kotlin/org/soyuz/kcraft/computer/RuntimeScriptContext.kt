@@ -15,6 +15,7 @@ import org.soyuz.kcraft.computer.process.ComputerInfoRequest
 import org.soyuz.kcraft.computer.process.ComputerRequest
 import org.soyuz.kcraft.computer.process.FileRequest
 import org.soyuz.kcraft.computer.process.GolemRequest
+import org.soyuz.kcraft.computer.process.GolemSnapshot
 import org.soyuz.kcraft.computer.process.KCraftProcess
 import org.soyuz.kcraft.computer.process.RedstoneRequest
 import org.soyuz.kcraft.computer.process.WorldRequest
@@ -238,7 +239,7 @@ internal class RuntimeScriptComputer(
     override val golems: List<KCraftGolem>
         get() {
             val result =
-                CompletableFuture<List<KCraftGolem>>()
+                CompletableFuture<List<GolemSnapshot>>()
 
             runtime.submitRequest(
                 GolemRequest.GetOwnedGolems(
@@ -247,6 +248,12 @@ internal class RuntimeScriptComputer(
             )
 
             return result.await()
+                .map { snapshot ->
+                    RuntimeScriptGolem(
+                        runtime,
+                        snapshot
+                    )
+                }
         }
 
     override val position: KCraftPosition
@@ -308,6 +315,38 @@ internal class RuntimeScriptRedstone(
 
 
 
+}
+
+
+internal class RuntimeScriptGolem(
+    private val runtime: ComputerRuntime,
+    private val snapshot: GolemSnapshot
+) : KCraftGolem {
+
+    override val id: String
+        get() =
+            snapshot.id
+
+    override val position: KCraftPosition
+        get() =
+            snapshot.position
+
+    override fun moveTo(
+        position: KCraftPosition
+    ) {
+        val result =
+            CompletableFuture<Unit>()
+
+        runtime.submitRequest(
+            GolemRequest.MoveTo(
+                golemId = id,
+                position = position,
+                result = result
+            )
+        )
+
+        result.await()
+    }
 }
 
 private fun <T> CompletableFuture<T>.await(): T =

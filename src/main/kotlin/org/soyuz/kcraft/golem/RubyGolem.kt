@@ -99,20 +99,35 @@ class RubyGolem(
     // Movement
     // -------------------------------------------------------------------------
 
-    /**
-     * Temporary development hook.
-     *
-     * This will eventually be replaced by proper KCraft golem commands.
-     */
-    fun debugMoveTo(
-        x: Double,
-        y: Double,
-        z: Double
-    ) {
-        navigation.moveTo(
-            x,
-            y,
-            z,
+    fun moveTo(
+        x: Int,
+        y: Int,
+        z: Int
+    ): Boolean {
+        val path =
+            navigation.createPath(
+                x.toDouble(),
+                y.toDouble(),
+                z.toDouble(),
+                0
+            )
+                ?: run {
+                    println("PATH: null")
+                    return false
+                }
+
+        println(
+            "PATH: canReach=${path.canReach()} " +
+                    "target=${path.target} " +
+                    "end=${path.endNode}"
+        )
+
+        if (!path.canReach()) {
+            return false
+        }
+
+        return navigation.moveTo(
+            path,
             0.5
         )
     }
@@ -499,27 +514,5 @@ class RubyGolem(
                     Attributes.MOVEMENT_SPEED,
                     0.25
                 )
-    }
-
-    override fun mobInteract(
-        player: Player,
-        hand: InteractionHand
-    ): InteractionResult {
-        if (!level().isClientSide) {
-            val direction =
-                lookAngle.multiply(
-                    5.0,
-                    0.0,
-                    5.0
-                )
-
-            debugMoveTo(
-                x + direction.x,
-                y,
-                z + direction.z
-            )
-        }
-
-        return InteractionResult.SUCCESS
     }
 }

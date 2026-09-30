@@ -9,14 +9,15 @@ import org.soyuz.kcraft.KCraftEntities
 import org.soyuz.kcraft.computer.scripting.KotlinScriptRuntime
 import org.soyuz.kcraft.computer.api.minecraft.KCraftBlock
 import org.soyuz.kcraft.computer.api.minecraft.KCraftDirection
-import org.soyuz.kcraft.computer.api.minecraft.KCraftGolem
 import org.soyuz.kcraft.computer.api.minecraft.KCraftPosition
+import org.soyuz.kcraft.computer.api.minecraft.UnreachablePositionException
 import org.soyuz.kcraft.computer.ksh.KShEnvironment
 import org.soyuz.kcraft.computer.ksh.KShInterpreter
 import org.soyuz.kcraft.computer.process.ComputerInfoRequest
 import org.soyuz.kcraft.computer.process.ComputerRequest
 import org.soyuz.kcraft.computer.process.FileRequest
 import org.soyuz.kcraft.computer.process.GolemRequest
+import org.soyuz.kcraft.computer.process.GolemSnapshot
 import org.soyuz.kcraft.computer.process.KCraftProcessManager
 import org.soyuz.kcraft.computer.process.RedstoneRequest
 import org.soyuz.kcraft.computer.process.WorldRequest
@@ -60,24 +61,6 @@ class ComputerRuntime(
     val processes = KCraftProcessManager(this)
     private val requests =
         ConcurrentLinkedQueue<ComputerRequest>()
-    val golems =
-        level.getEntities(
-            KCraftEntities.RUBY_GOLEM
-        ) { golem ->
-            golem.parentComputerId == id
-        }
-
-    val snapshots =
-        golems.map { golem ->
-            KCraftGolem(
-                id = golem.uuid.toString(),
-                position = KCraftPosition(
-                    golem.blockX,
-                    golem.blockY,
-                    golem.blockZ
-                )
-            )
-        }
 
     fun submitRequest(request: ComputerRequest) {
         requests.add(request)
@@ -337,13 +320,46 @@ class ComputerRuntime(
                     ) { golem ->
                         golem.parentComputerId == id
                     }.map { golem ->
-                        KCraftGolem(
+                        GolemSnapshot(
                             id = golem.uuid.toString(),
                             position = KCraftPosition(
                                 golem.blockX,
                                 golem.blockY,
                                 golem.blockZ
                             )
+                        )
+                    }
+                }
+            }
+            is GolemRequest.MoveTo -> {
+                complete(request.result) {
+                    val golemId =
+                        UUID.fromString(
+                            request.golemId
+                        )
+
+                    val golem =
+                        level.getEntities(
+                            KCraftEntities.RUBY_GOLEM
+                        ) { candidate ->
+                            candidate.uuid == golemId &&
+                                    candidate.parentComputerId == id
+                        }
+                            .firstOrNull()
+                            ?: error(
+                                "Ruby Golem ${request.golemId} is unavailable"
+                            )
+
+                    val reachable =
+                        golem.moveTo(
+                            request.position.x,
+                            request.position.y,
+                            request.position.z
+                        )
+
+                    if (!reachable) {
+                        throw UnreachablePositionException(
+                            request.position
                         )
                     }
                 }
