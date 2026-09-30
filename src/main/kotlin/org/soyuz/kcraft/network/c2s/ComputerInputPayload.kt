@@ -45,35 +45,35 @@ data class ComputerInputPayload(
     }
 
     override fun type() = TYPE
+
+    fun toComputerInput(): ComputerInput =
+        when (type) {
+            Type.CHARACTER ->
+                ComputerInput.Character(character)
+
+            Type.ENTER ->
+                ComputerInput.Enter
+
+            Type.BACKSPACE ->
+                ComputerInput.Backspace
+
+            Type.UP ->
+                ComputerInput.Up
+
+            Type.DOWN ->
+
+                ComputerInput.Down
+
+            Type.LEFT ->
+                ComputerInput.Left
+
+            Type.RIGHT ->
+                ComputerInput.Right
+
+            Type.SAVE ->
+                ComputerInput.Save
+
+            ComputerInputPayload.Type.EXIT ->
+                ComputerInput.Exit
+        }
 }
-
-
-fun ComputerInputPayload.toComputerInput(): ComputerInput =
-    when (type) {
-        ComputerInputPayload.Type.CHARACTER ->
-            ComputerInput.Character(character)
-
-        ComputerInputPayload.Type.ENTER ->
-            ComputerInput.Enter
-
-        ComputerInputPayload.Type.BACKSPACE ->
-            ComputerInput.Backspace
-
-        ComputerInputPayload.Type.UP ->
-            ComputerInput.Up
-
-        ComputerInputPayload.Type.DOWN ->
-            ComputerInput.Down
-
-        ComputerInputPayload.Type.LEFT ->
-            ComputerInput.Left
-
-        ComputerInputPayload.Type.RIGHT ->
-            ComputerInput.Right
-
-        ComputerInputPayload.Type.SAVE ->
-            ComputerInput.Save
-
-        ComputerInputPayload.Type.EXIT ->
-            ComputerInput.Exit
-    }

@@ -4,7 +4,6 @@ import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.server.level.ServerLevel
-import net.minecraft.world.entity.EntitySpawnReason
 import org.soyuz.kcraft.KCraftEntities
 import org.soyuz.kcraft.computer.scripting.KotlinScriptRuntime
 import org.soyuz.kcraft.computer.api.minecraft.KCraftBlock
@@ -30,13 +29,9 @@ class ComputerRuntime(
     val fileSystem: FileSystem,
     internal val level: ServerLevel,
     internal val position: BlockPos,
+    val id: UUID
 ) {
 
-    val id: UUID =
-        computerId(
-            level,
-            position
-        )
 
 
     companion object {
@@ -386,40 +381,6 @@ class ComputerRuntime(
         )
     }
 
-    fun summonRubyGolem(): Boolean {
-        val golem =
-            KCraftEntities.RUBY_GOLEM.create(
-                level,
-                EntitySpawnReason.MOB_SUMMONED
-            ) ?: return false
-
-        golem.bindToComputer(
-            computerId = id
-        )
-
-        golem.setPos(
-            position.x + 0.5,
-            position.y + 1.0,
-            position.z + 0.5
-        )
-
-        return level.addFreshEntity(golem)
-    }
-
-    private fun computerId(
-        level: ServerLevel,
-        position: BlockPos
-    ): UUID {
-        val identity =
-            "${level.dimension().identifier()}:${position.x},${position.y},${position.z}"
-
-        return UUID.nameUUIDFromBytes(
-            identity.toByteArray(
-                Charsets.UTF_8
-            )
-        )
-    }
-
 
     internal fun KCraftDirection.toMinecraft(): Direction =
         when (this) {
@@ -428,5 +389,7 @@ class ComputerRuntime(
             KCraftDirection.EAST -> Direction.EAST
             KCraftDirection.WEST -> Direction.WEST
         }
+
+
 }
 
