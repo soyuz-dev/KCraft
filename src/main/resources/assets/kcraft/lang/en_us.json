@@ -3,5 +3,7 @@
   "block.kcraft.ruby_block": "Ruby Block",
   "block.kcraft.ruby_ore": "Ruby Ore",
   "block.kcraft.computer_block": "Computer",
-  "item.kcraft.computer_chip": "Computer Chip"
+  "item.kcraft.computer_chip": "Computer Chip",
+  "item.kcraft.ruby_golem_chassis": "Ruby Golem Chassis",
+  "item.kcraft.ruby_golem": "Ruby Golem"
 }

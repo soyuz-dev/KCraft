@@ -5,6 +5,7 @@ import net.minecraft.resources.Identifier
 import org.slf4j.LoggerFactory
 import org.soyuz.kcraft.computer.api.KCraftScript
 import org.soyuz.kcraft.computer.api.KCraftScriptContext
+import org.soyuz.kcraft.golem.RubyGolemInteractions
 import org.soyuz.kcraft.network.KCraftPackets
 import org.soyuz.kcraft.worldgen.KCraftWorldGeneration
 
@@ -25,6 +26,7 @@ class KCraft : ModInitializer {
         KCraftMenus.initialize()
         KCraftWorldGeneration.initialize()
         KCraftEntities.initialize()
+        RubyGolemInteractions.initialize()
 
         LOGGER.info("KCraft Initialised")
     }

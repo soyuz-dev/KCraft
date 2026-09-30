@@ -6,6 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.core.registries.Registries
 import net.minecraft.world.item.CreativeModeTabs
 import net.minecraft.world.item.Item
+import org.soyuz.kcraft.golem.RubyGolemChassisItem
 import org.soyuz.kcraft.util.key
 
 object KCraftItems {
@@ -38,9 +39,35 @@ object KCraftItems {
         Item.Properties()
     )
 
+    val RUBY_GOLEM_CHASSIS =
+        register(
+            "ruby_golem_chassis",
+            ::RubyGolemChassisItem,
+            Item.Properties()
+                .stacksTo(1)
+        )
+
+    val RUBY_GOLEM =
+        register(
+            "ruby_golem",
+            ::Item,
+            Item.Properties()
+                .stacksTo(1)
+        )
+
     fun initialize() {
-        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.INGREDIENTS)
-            .register(CreativeModeTabEvents.ModifyOutput { it.accept(RUBY); it.accept(COMPUTER_CHIP) })
+        CreativeModeTabEvents
+            .modifyOutputEvent(
+                CreativeModeTabs.INGREDIENTS
+            )
+            .register(
+                CreativeModeTabEvents.ModifyOutput {
+                    it.accept(RUBY)
+                    it.accept(COMPUTER_CHIP)
+                    it.accept(RUBY_GOLEM_CHASSIS)
+                    it.accept(RUBY_GOLEM)
+                }
+            )
     }
 
 }
