@@ -7,9 +7,11 @@ import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.MenuProvider
+import net.minecraft.world.SimpleContainer
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.inventory.AbstractContainerMenu
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.storage.LevelResource
@@ -28,6 +30,17 @@ class ComputerBlockEntity(
     pos,
     state
 ), MenuProvider {
+
+    val golemSlot =
+        object : SimpleContainer(1) {
+            override fun setChanged() {
+                super.setChanged()
+
+                this@ComputerBlockEntity
+                    .setChanged()
+            }
+        }
+
 
     private val viewers = mutableSetOf<ServerPlayer>()
 
@@ -83,30 +96,51 @@ class ComputerBlockEntity(
         get() = _runtime
             ?: error("Computer runtime has not been initialised")
 
-    override fun saveAdditional(output: ValueOutput) {
+    override fun saveAdditional(
+        output: ValueOutput
+    ) {
         super.saveAdditional(output)
 
         output.putString(
             "computer_id",
             computerId.toString()
         )
+
+        golemSlot.storeAsItemList(
+            output.list(
+                "golem",
+                ItemStack.CODEC
+            )
+        )
     }
 
-    override fun loadAdditional(input: ValueInput) {
+
+    override fun loadAdditional(
+        input: ValueInput
+    ) {
         super.loadAdditional(input)
 
-        val saved = input.getStringOr(
-            "computer_id",
-            ""
-        )
+        val saved =
+            input.getStringOr(
+                "computer_id",
+                ""
+            )
 
-        computerId = runCatching {
-            UUID.fromString(saved)
-        }.getOrElse {
-            UUID.randomUUID().also {
-                setChanged()
+        computerId =
+            runCatching {
+                UUID.fromString(saved)
+            }.getOrElse {
+                UUID.randomUUID().also {
+                    setChanged()
+                }
             }
-        }
+
+        golemSlot.fromItemList(
+            input.listOrEmpty(
+                "golem",
+                ItemStack.CODEC
+            )
+        )
     }
 
     private fun ensureRuntime() {
@@ -179,5 +213,9 @@ class ComputerBlockEntity(
             syncDisplay()
         }
     }
+
+
+
+
 }
 
