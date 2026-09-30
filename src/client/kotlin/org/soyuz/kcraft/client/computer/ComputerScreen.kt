@@ -14,6 +14,7 @@ import org.soyuz.kcraft.computer.Terminal
 import org.soyuz.kcraft.network.c2s.ComputerInputPayload
 import org.soyuz.kcraft.network.c2s.RequestComputerDisplayStatePayload
 
+
 class ComputerScreen(
     menu: ComputerMenu,
     inventory: Inventory,
@@ -21,10 +22,32 @@ class ComputerScreen(
 ) : AbstractContainerScreen<ComputerMenu>(
     menu,
     inventory,
-    title
+    title,
+
+    // Width and height of the container GUI.
+    //
+    // These are constructor arguments in the current Minecraft API;
+    // imageWidth/imageHeight themselves do not have setters.
+    //
+    // 176 is the usual vanilla container width.
+    // 250 gives KCraft enough vertical space for:
+    //
+    //   - the terminal
+    //   - the Ruby Golem slot
+    //   - the player's 3 inventory rows
+    //   - the player's hotbar
+    176,
+    250
 ) {
 
     init {
+        /*
+         * Ask the server for the current terminal contents when the
+         * computer screen first opens.
+         *
+         * Inventory slots do NOT need custom networking here.
+         * AbstractContainerMenu already synchronises those.
+         */
         ClientPlayNetworking.send(
             RequestComputerDisplayStatePayload
         )
@@ -35,12 +58,23 @@ class ComputerScreen(
     // Terminal state
     // -------------------------------------------------------------------------
 
+    /*
+     * This is only the client-side representation of the terminal display.
+     *
+     * The authoritative terminal still lives in ComputerRuntime on the
+     * server. The server sends us snapshots of what should currently be
+     * visible.
+     */
     private var visibleLines =
         List(Terminal.VISIBLE_LINES) { "" }
 
     private var cursorRow = 0
     private var cursorColumn = 0
 
+
+    /**
+     * Called when the server sends an updated terminal display.
+     */
     fun updateTerminalState(
         lines: List<String>,
         cursorRow: Int,
@@ -53,9 +87,12 @@ class ComputerScreen(
 
 
     // -------------------------------------------------------------------------
-    // Input
+    // Keyboard input
     // -------------------------------------------------------------------------
 
+    /**
+     * Ordinary typed characters are sent to the server-side computer.
+     */
     override fun charTyped(
         event: CharacterEvent
     ): Boolean {
@@ -71,6 +108,10 @@ class ComputerScreen(
         return true
     }
 
+
+    /**
+     * Translate keyboard controls into KCraft computer input.
+     */
     override fun keyPressed(
         event: KeyEvent
     ): Boolean {
@@ -116,6 +157,11 @@ class ComputerScreen(
                     null
             }
 
+
+        /*
+         * If KCraft recognised the key, consume it so Minecraft does not
+         * also try to interpret it as ordinary container input.
+         */
         if (input != null) {
             ClientPlayNetworking.send(
                 ComputerInputPayload(
@@ -126,8 +172,13 @@ class ComputerScreen(
             return true
         }
 
-        // Keep Minecraft's inventory key from
-        // interfering with the computer.
+
+        /*
+         * Normally E closes an inventory screen.
+         *
+         * KCraft currently treats the computer screen more like a terminal,
+         * so keep E from interfering with terminal usage.
+         */
         if (
             event.key ==
             GLFW.GLFW_KEY_E
@@ -135,19 +186,39 @@ class ComputerScreen(
             return true
         }
 
-        return super.keyPressed(event)
+
+        /*
+         * Anything KCraft does not care about is handed back to
+         * AbstractContainerScreen.
+         *
+         * This is important now that we have real inventory slots:
+         * Minecraft still needs to handle its ordinary container controls.
+         */
+        return super.keyPressed(
+            event
+        )
     }
 
 
     // -------------------------------------------------------------------------
-    // Rendering
+    // Vanilla labels
     // -------------------------------------------------------------------------
 
+    /**
+     * Suppress AbstractContainerScreen's normal title and inventory labels.
+     *
+     * KCraft has its own terminal-style interface instead.
+     */
     override fun extractLabels(
         graphics: GuiGraphicsExtractor,
         mouseX: Int,
         mouseY: Int
     ) = Unit
+
+
+    // -------------------------------------------------------------------------
+    // Rendering
+    // -------------------------------------------------------------------------
 
     override fun extractRenderState(
         graphics: GuiGraphicsExtractor,
@@ -156,9 +227,43 @@ class ComputerScreen(
         partialTick: Float
     ) {
         /*
-         * Let AbstractContainerScreen render and manage
-         * the menu slots first.
+         * VERY IMPORTANT:
+         *
+         * Let AbstractContainerScreen do its work.
+         *
+         * This is what gives us normal Minecraft container behaviour such as:
+         *
+         *   - rendering ItemStacks in slots
+         *   - slot hover state
+         *   - carried ItemStack rendering
+         *   - tooltips
+         *   - normal container interaction state
+         *
+         * The actual slot definitions live in ComputerMenu.
          */
+        // ---------------------------------------------------------------------
+// Temporary Ruby Golem slot background
+// ---------------------------------------------------------------------
+
+        val golemSlotX =
+            leftPos + 151
+
+        val golemSlotY =
+            topPos + 20
+
+        /*
+         * Draw a simple dark 18 × 18 square behind the Ruby Golem slot.
+         *
+         * The actual interactive slot still belongs to ComputerMenu;
+         * this is purely visual.
+         */
+        graphics.fill(
+            golemSlotX,
+            golemSlotY,
+            golemSlotX + 18,
+            golemSlotY + 18,
+            ARGB.opaque(0x383838)
+        )
         super.extractRenderState(
             graphics,
             mouseX,
@@ -166,9 +271,16 @@ class ComputerScreen(
             partialTick
         )
 
+
         /*
-         * Terminal coordinates are screen coordinates here,
-         * so offset them by the GUI's top-left corner.
+         * Terminal rendering.
+         *
+         * leftPos/topPos are the top-left corner of the 176 × 250
+         * container area on the player's screen.
+         *
+         * Keeping the terminal relative to these coordinates means the
+         * terminal and the menu slots move together when Minecraft centres
+         * the GUI on different screen sizes.
          */
         val terminalX =
             leftPos + 20
@@ -176,13 +288,16 @@ class ComputerScreen(
         val terminalY =
             topPos + 20
 
+
         for (
         (index, line)
         in visibleLines.withIndex()
         ) {
             graphics.text(
                 font,
-                Component.literal(line),
+                Component.literal(
+                    line
+                ),
                 terminalX,
                 terminalY +
                         index * 12,
@@ -191,5 +306,14 @@ class ComputerScreen(
                 )
             )
         }
+
+
+        /*
+         * We deliberately are NOT drawing custom slot backgrounds yet.
+         *
+         * ComputerMenu provides the functional slots and Minecraft handles
+         * the items. Once the inventory behaviour is confirmed to work,
+         * this screen can get an actual KCraft GUI/background.
+         */
     }
 }
