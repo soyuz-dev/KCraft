@@ -39,6 +39,8 @@ class KShInterpreter(
         "run" to "Run a Kotlin program",
         "ps" to "List processes",
         "kill" to "Stop a running process",
+
+        "deploy" to "Deploy the computer's Ruby Golem",
     )
 
     fun executeLine(source: String) {
@@ -60,7 +62,6 @@ class KShInterpreter(
             "clear" -> clear(args)
             "source" -> source(args, sourceDepth)
 
-
             "run" -> run(args)
             "ps" -> ps(args)
             "kill" -> kill(args)
@@ -79,6 +80,8 @@ class KShInterpreter(
             "rmdir" -> rmdir(args)
 
             "pico" -> pico(args)
+
+            "deploy" -> deploy(args)
 
             "help" -> help(args)
 
@@ -495,6 +498,23 @@ class KShInterpreter(
         terminal.appendLine(
             "Stopped process $pid"
         )
+    }
+
+    private fun deploy(
+        args: List<String>
+    ) {
+        if (args.isNotEmpty()) {
+            terminal.appendLine(
+                "deploy: expected no arguments"
+            )
+            return
+        }
+
+        if (!runtime.deployGolem()) {
+            terminal.appendLine(
+                "deploy: failed to deploy Ruby Golem"
+            )
+        }
     }
 
 }

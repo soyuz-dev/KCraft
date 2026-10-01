@@ -23,7 +23,7 @@ class TerminalTest {
 
         val visible = terminal.visibleLines
 
-        assertEquals(Terminal.VISIBLE_LINES, visible.size)
+        assertEquals(Terminal.MAX_LINES, visible.size)
         assertEquals(Terminal.PROMPT, visible.first())
         assertTrue(visible.drop(1).all { it == "" })
     }
@@ -109,13 +109,13 @@ class TerminalTest {
     @Test
     fun `appendLine chunks long output`() {
         val text =
-            "A".repeat(Terminal.MAX_LINE_LENGTH + 10)
+            "A".repeat(Terminal.MAX_INPUT_LENGTH + 10)
 
         terminal.appendLine(text)
 
         assertEquals(2, terminal.lineCount)
         assertEquals(
-            "A".repeat(Terminal.MAX_LINE_LENGTH),
+            "A".repeat(Terminal.MAX_INPUT_LENGTH),
             terminal.lines[0]
         )
         assertEquals(
@@ -126,12 +126,12 @@ class TerminalTest {
 
     @Test
     fun `input respects terminal width`() {
-        repeat(Terminal.MAX_LINE_LENGTH * 2) {
+        repeat(Terminal.MAX_INPUT_LENGTH * 2) {
             terminal.appendChar('X')
         }
 
         assertEquals(
-            Terminal.MAX_LINE_LENGTH - Terminal.PROMPT.length,
+            Terminal.MAX_INPUT_LENGTH - Terminal.PROMPT.length,
             terminal.input.length
         )
     }
@@ -199,7 +199,7 @@ class TerminalTest {
 
     @Test
     fun `visible lines include prompt line`() {
-        repeat(Terminal.VISIBLE_LINES) { index ->
+        repeat(Terminal.MAX_LINES) { index ->
             terminal.appendLine("Row $index")
         }
 
@@ -214,7 +214,7 @@ class TerminalTest {
     fun `scrolling moves through history`() {
         val extraLines = 5
 
-        repeat(Terminal.VISIBLE_LINES + extraLines) { index ->
+        repeat(Terminal.MAX_LINES + extraLines) { index ->
             terminal.appendLine("Row $index")
         }
 

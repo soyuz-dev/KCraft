@@ -1,108 +1,401 @@
 package org.soyuz.kcraft.computer
 
+
 class Terminal : ComputerMode {
 
     companion object {
-        const val VISIBLE_LINES = 12
-        const val MAX_LINE_LENGTH = 128
-        const val MAX_LINES = 64
+        /*
+         * Commands may be longer than one visual row.
+         */
+        const val MAX_INPUT_LENGTH =
+            128
 
-        const val PROMPT = "> "
+        /*
+         * Number of logical history entries retained.
+         *
+         * A logical entry may occupy several visual rows after wrapping.
+         */
+        const val MAX_LINES =
+            64
+
+        const val PROMPT =
+            "> "
     }
+
 
     data class CursorPosition(
         val row: Int,
         val column: Int
     )
 
-    // Fixed-size circular buffer for committed terminal history.
-    private val _lines = Array(MAX_LINES) { "" }
 
-    private var _lineCount = 0
-    private var _startIndex = 0
+    // -------------------------------------------------------------------------
+    // Logical terminal state
+    // -------------------------------------------------------------------------
 
-    // Editable input is separate from history.
-    private var _input = ""
+    /*
+     * Fixed-size circular buffer of LOGICAL history lines.
+     *
+     * Wrapping is deliberately not stored here.
+     *
+     * For example:
+     *
+     *   "deploy: failed to deploy Ruby Golem"
+     *
+     * remains one history entry even if the display later wraps it.
+     */
+    private val _lines =
+        Array(MAX_LINES) {
+            ""
+        }
 
-    // Cursor within the input string.
-    private var _inputCursor = 0
+    private var _lineCount =
+        0
 
-    // 0 = oldest possible viewport position.
-    // maxScrollOffset() = newest possible viewport position.
-    private var _scrollOffset = 0
+    private var _startIndex =
+        0
+
+
+    /*
+     * Editable command input is separate from committed history.
+     */
+    private var _input =
+        ""
+
+    /*
+     * Cursor position within the raw input string.
+     *
+     * This does NOT include the "> " prompt.
+     */
+    private var _inputCursor =
+        0
+
+
+    /*
+     * Offset into VISUAL rows, not logical history lines.
+     *
+     * Once wrapping exists, those are no longer the same thing.
+     */
+    private var _scrollOffset =
+        0
+
+
+    // -------------------------------------------------------------------------
+    // Public state
+    // -------------------------------------------------------------------------
 
     val lineCount: Int
-        get() = _lineCount
+        get() =
+            _lineCount
 
     val lines: List<String>
-        get() = List(_lineCount) { getLineAt(it) }
+        get() =
+            List(_lineCount) {
+                getLineAt(it)
+            }
 
     val input: String
-        get() = _input
+        get() =
+            _input
 
     val inputCursor: Int
-        get() = _inputCursor
+        get() =
+            _inputCursor
+
+
+    // -------------------------------------------------------------------------
+    // Output wrapping
+    // -------------------------------------------------------------------------
 
     /**
-     * Full display contents:
+     * Wrap ordinary terminal output.
      *
-     * history...
-     * > current input
+     * Prefer breaking at whitespace so prose and diagnostics remain readable.
+     * If no suitable whitespace exists, hard-wrap at DISPLAY_WIDTH.
+     */
+    private fun wrapOutputLine(
+        line: String
+    ): List<String> {
+
+        if (line.isEmpty()) {
+            return listOf("")
+        }
+
+        val result =
+            mutableListOf<String>()
+
+        var remaining =
+            line
+
+        while (
+            remaining.length >
+            ComputerMode.DISPLAY_WIDTH
+        ) {
+
+            val candidate =
+                remaining.take(
+                    ComputerMode.DISPLAY_WIDTH
+                )
+
+            /*
+             * Prefer the final space within the available width.
+             *
+             * Do not split at character 0, because that could make no
+             * progress for lines beginning with whitespace.
+             */
+            val splitAt =
+                candidate
+                    .lastIndexOf(' ')
+                    .takeIf {
+                        it > 0
+                    }
+                    ?: ComputerMode.DISPLAY_WIDTH
+
+            result +=
+                remaining.take(
+                    splitAt
+                )
+
+            remaining =
+                remaining
+                    .drop(splitAt)
+                    .trimStart()
+        }
+
+        result +=
+            remaining
+
+        return result
+    }
+
+
+    // -------------------------------------------------------------------------
+    // Input wrapping
+    // -------------------------------------------------------------------------
+
+    /**
+     * The input is hard-wrapped rather than word-wrapped.
      *
-     * The prompt/input line is derived state and is NOT part of history.
+     * This is intentional.
+     *
+     * If input were word-wrapped, cursor position would depend on every
+     * previous whitespace break. Hard wrapping means:
+     *
+     *   visualIndex = PROMPT.length + inputCursor
+     *   row         = visualIndex / DISPLAY_WIDTH
+     *   column      = visualIndex % DISPLAY_WIDTH
+     *
+     * which makes editing predictable.
+     */
+    private val inputDisplayLines: List<String>
+        get() {
+            val text =
+                "$PROMPT$_input"
+
+            val rows =
+                text.chunked(
+                    ComputerMode.DISPLAY_WIDTH
+                )
+                    .toMutableList()
+
+            /*
+             * If the cursor lands exactly after the final character of a
+             * completely full row, it belongs at column 0 of the NEXT row.
+             *
+             * Example with width 5:
+             *
+             *   abcde
+             *   _
+             *
+             * chunked() would otherwise only produce ["abcde"], leaving no
+             * visual row for the cursor.
+             */
+            if (
+                text.length %
+                ComputerMode.DISPLAY_WIDTH ==
+                0
+            ) {
+                rows += ""
+            }
+
+            return rows
+        }
+
+
+    // -------------------------------------------------------------------------
+    // Complete visual display
+    // -------------------------------------------------------------------------
+
+    /**
+     * Convert logical terminal state into actual rows displayed by the GUI.
+     *
+     * History:
+     *     word-wrapped
+     *
+     * Current command:
+     *     hard-wrapped
      */
     private val displayLines: List<String>
-        get() = lines + "$PROMPT$_input"
+        get() =
+            buildList {
 
+                for (line in lines) {
+                    addAll(
+                        wrapOutputLine(
+                            line
+                        )
+                    )
+                }
+
+                addAll(
+                    inputDisplayLines
+                )
+            }
+
+
+    /**
+     * The twelve rows currently visible in the terminal viewport.
+     */
     val visibleLines: Array<String>
-        get() = Array(VISIBLE_LINES) { index ->
-            val displayIndex = _scrollOffset + index
-            displayLines.getOrElse(displayIndex) { "" }
+        get() {
+            val display =
+                displayLines
+
+            return Array(
+                ComputerMode.VISIBLE_LINES
+            ) { index ->
+
+                val displayIndex =
+                    _scrollOffset +
+                            index
+
+                display.getOrElse(
+                    displayIndex
+                ) {
+                    ""
+                }
+            }
         }
+
+
+    // -------------------------------------------------------------------------
+    // Cursor
+    // -------------------------------------------------------------------------
 
     /**
      * Cursor position relative to the currently visible viewport.
-     *
-     * The cursor always lives on the prompt/input line.
      */
-    val visibleCursorPosition: CursorPosition?
+    val visibleCursorPosition:
+            CursorPosition?
         get() {
-            val inputRow = displayLines.lastIndex
 
+            /*
+             * Count how many visual rows the history occupies.
+             */
+            val historyVisualRows =
+                lines.sumOf { line ->
+                    wrapOutputLine(
+                        line
+                    ).size
+                }
+
+
+            /*
+             * Cursor index within:
+             *
+             *     "> " + input
+             */
+            val visualInputIndex =
+                PROMPT.length +
+                        _inputCursor
+
+            val inputRowOffset =
+                visualInputIndex /
+                        ComputerMode.DISPLAY_WIDTH
+
+            val inputColumn =
+                visualInputIndex %
+                        ComputerMode.DISPLAY_WIDTH
+
+
+            /*
+             * Absolute visual row of the cursor.
+             */
+            val cursorRow =
+                historyVisualRows +
+                        inputRowOffset
+
+
+            /*
+             * Cursor may be outside the currently visible viewport if the
+             * user has manually scrolled upwards.
+             */
             if (
-                inputRow < _scrollOffset ||
-                inputRow >= _scrollOffset + VISIBLE_LINES
+                cursorRow <
+                _scrollOffset ||
+                cursorRow >=
+                _scrollOffset +
+                ComputerMode.VISIBLE_LINES
             ) {
                 return null
             }
 
+
             return CursorPosition(
-                row = inputRow - _scrollOffset,
-                column = PROMPT.length + _inputCursor
+                row =
+                    cursorRow -
+                            _scrollOffset,
+
+                column =
+                    inputColumn
             )
         }
 
-    fun appendChar(char: Char) {
-        if (_input.length >= MAX_LINE_LENGTH - PROMPT.length) {
+
+    // -------------------------------------------------------------------------
+    // Input editing
+    // -------------------------------------------------------------------------
+
+    fun appendChar(
+        char: Char
+    ) {
+
+        if (
+            _input.length >=
+            MAX_INPUT_LENGTH
+        ) {
             return
         }
 
         _input =
-            _input.substring(0, _inputCursor) +
+            _input.substring(
+                0,
+                _inputCursor
+            ) +
                     char +
-                    _input.substring(_inputCursor)
+                    _input.substring(
+                        _inputCursor
+                    )
 
         _inputCursor++
 
         scrollToBottom()
     }
 
+
     fun popChar(): Char? {
-        if (_inputCursor <= 0 || _input.isEmpty()) {
+
+        if (
+            _inputCursor <= 0 ||
+            _input.isEmpty()
+        ) {
             return null
         }
 
-        val removed = _input[_inputCursor - 1]
+        val removed =
+            _input[
+                _inputCursor - 1
+            ]
 
         _input =
             _input.removeRange(
@@ -117,79 +410,160 @@ class Terminal : ComputerMode {
         return removed
     }
 
-    fun appendLine(text: String = "") {
-        if (text.isEmpty()) {
-            appendRawLine("")
-        } else {
-            text.chunked(MAX_LINE_LENGTH)
-                .forEach(::appendRawLine)
-        }
+
+    fun clearInput() {
+
+        _input =
+            ""
+
+        _inputCursor =
+            0
 
         scrollToBottom()
     }
 
+
+    fun setInput(
+        text: String
+    ) {
+
+        _input =
+            text.take(
+                MAX_INPUT_LENGTH
+            )
+
+        _inputCursor =
+            _input.length
+
+        scrollToBottom()
+    }
+
+
+    fun moveCursorLeft(
+        amount: Int = 1
+    ) {
+
+        require(
+            amount >= 0
+        ) {
+            "Cursor movement amount cannot be negative"
+        }
+
+        _inputCursor =
+            (
+                    _inputCursor -
+                            amount
+                    )
+                .coerceAtLeast(
+                    0
+                )
+
+        /*
+         * For now, editing always returns the viewport to the active command.
+         *
+         * Later we could instead scroll only enough to reveal the cursor.
+         */
+        scrollToBottom()
+    }
+
+
+    fun moveCursorRight(
+        amount: Int = 1
+    ) {
+
+        require(
+            amount >= 0
+        ) {
+            "Cursor movement amount cannot be negative"
+        }
+
+        _inputCursor =
+            (
+                    _inputCursor +
+                            amount
+                    )
+                .coerceAtMost(
+                    _input.length
+                )
+
+        scrollToBottom()
+    }
+
+
+    // -------------------------------------------------------------------------
+    // History
+    // -------------------------------------------------------------------------
+
     /**
-     * Commits the current input into history.
+     * Append one LOGICAL line to terminal history.
+     *
+     * The line is not pre-wrapped here.
+     * Wrapping belongs to display generation.
+     */
+    fun appendLine(
+        text: String = ""
+    ) {
+
+        appendRawLine(
+            text
+        )
+
+        scrollToBottom()
+    }
+
+
+    /**
+     * Commit the current command into terminal history.
      *
      * Returns the raw command text without the prompt.
      */
     fun commitInput(): String {
-        val command = _input
 
-        appendLine("$PROMPT$command")
+        val command =
+            _input
 
-        _input = ""
-        _inputCursor = 0
+        appendLine(
+            "$PROMPT$command"
+        )
+
+        _input =
+            ""
+
+        _inputCursor =
+            0
 
         scrollToBottom()
 
         return command
     }
 
-    fun clearInput() {
-        _input = ""
-        _inputCursor = 0
-        scrollToBottom()
-    }
-
-    fun setInput(text: String) {
-        _input = text.take(MAX_LINE_LENGTH - PROMPT.length)
-        _inputCursor = _input.length
-        scrollToBottom()
-    }
-
-    fun moveCursorLeft(amount: Int = 1) {
-        require(amount >= 0) {
-            "Cursor movement amount cannot be negative"
-        }
-
-        _inputCursor =
-            (_inputCursor - amount)
-                .coerceAtLeast(0)
-    }
-
-    fun moveCursorRight(amount: Int = 1) {
-        require(amount >= 0) {
-            "Cursor movement amount cannot be negative"
-        }
-
-        _inputCursor =
-            (_inputCursor + amount)
-                .coerceAtMost(_input.length)
-    }
 
     fun popLine(): String {
-        if (_lineCount == 0) {
+
+        if (
+            _lineCount == 0
+        ) {
             return ""
         }
 
-        val lastLogicalIndex = _lineCount - 1
+        val lastLogicalIndex =
+            _lineCount - 1
+
         val physicalIndex =
-            physicalIndex(lastLogicalIndex)
+            physicalIndex(
+                lastLogicalIndex
+            )
 
-        val removed = _lines[physicalIndex]
+        val removed =
+            _lines[
+                physicalIndex
+            ]
 
-        _lines[physicalIndex] = ""
+        _lines[
+            physicalIndex
+        ] =
+            ""
+
         _lineCount--
 
         clampScrollOffset()
@@ -197,86 +571,153 @@ class Terminal : ComputerMode {
         return removed
     }
 
-    fun scrollUp(amount: Int = 1) {
-        require(amount >= 0) {
-            "Scroll amount cannot be negative"
-        }
 
-        _scrollOffset =
-            (_scrollOffset - amount)
-                .coerceAtLeast(0)
-    }
+    private fun appendRawLine(
+        line: String
+    ) {
 
-    fun scrollDown(amount: Int = 1) {
-        require(amount >= 0) {
-            "Scroll amount cannot be negative"
-        }
+        /*
+         * If the history buffer is full, forget the oldest logical line.
+         */
+        if (
+            _lineCount ==
+            MAX_LINES
+        ) {
 
-        _scrollOffset =
-            (_scrollOffset + amount)
-                .coerceAtMost(maxScrollOffset())
-    }
-
-    fun scrollToBottom() {
-        _scrollOffset = maxScrollOffset()
-    }
-
-    fun clear() {
-        _lines.fill("")
-
-        _lineCount = 0
-        _startIndex = 0
-
-        _input = ""
-        _inputCursor = 0
-
-        _scrollOffset = 0
-    }
-
-    private fun appendRawLine(line: String) {
-        require(line.length <= MAX_LINE_LENGTH) {
-            "Line exceeds maximum length of $MAX_LINE_LENGTH"
-        }
-
-        if (_lineCount == MAX_LINES) {
-            _lines[_startIndex] = ""
+            _lines[
+                _startIndex
+            ] =
+                ""
 
             _startIndex =
-                (_startIndex + 1) % MAX_LINES
+                (
+                        _startIndex +
+                                1
+                        ) %
+                        MAX_LINES
 
             _lineCount--
         }
 
-        val index =
-            physicalIndex(_lineCount)
 
-        _lines[index] = line
+        val index =
+            physicalIndex(
+                _lineCount
+            )
+
+        _lines[
+            index
+        ] =
+            line
+
         _lineCount++
     }
 
-    private fun getLineAt(row: Int): String {
-        require(row in 0 until _lineCount) {
+
+    private fun getLineAt(
+        row: Int
+    ): String {
+
+        require(
+            row in
+                    0 until
+                    _lineCount
+        ) {
             "Row $row is outside terminal contents"
         }
 
-        return _lines[physicalIndex(row)]
+        return _lines[
+            physicalIndex(
+                row
+            )
+        ]
     }
+
 
     private fun physicalIndex(
         logicalIndex: Int
     ): Int =
-        (_startIndex + logicalIndex) % MAX_LINES
+        (
+                _startIndex +
+                        logicalIndex
+                ) %
+                MAX_LINES
 
-    private fun maxScrollOffset(): Int {
-        val displayLineCount =
-            _lineCount + 1 // +1 for prompt/input line
 
-        return (
-                displayLineCount - VISIBLE_LINES
-                ).coerceAtLeast(0)
+    // -------------------------------------------------------------------------
+    // Scrolling
+    // -------------------------------------------------------------------------
+
+    fun scrollUp(
+        amount: Int = 1
+    ) {
+
+        require(
+            amount >= 0
+        ) {
+            "Scroll amount cannot be negative"
+        }
+
+        _scrollOffset =
+            (
+                    _scrollOffset -
+                            amount
+                    )
+                .coerceAtLeast(
+                    0
+                )
     }
 
+
+    fun scrollDown(
+        amount: Int = 1
+    ) {
+
+        require(
+            amount >= 0
+        ) {
+            "Scroll amount cannot be negative"
+        }
+
+        _scrollOffset =
+            (
+                    _scrollOffset +
+                            amount
+                    )
+                .coerceAtMost(
+                    maxScrollOffset()
+                )
+    }
+
+
+    fun scrollToBottom() {
+
+        _scrollOffset =
+            maxScrollOffset()
+    }
+
+
+    private fun maxScrollOffset(): Int {
+
+        /*
+         * IMPORTANT:
+         *
+         * This must use VISUAL rows.
+         *
+         * A single logical history entry may now occupy multiple display rows.
+         */
+        return (
+                displayLines.size -
+                        ComputerMode.VISIBLE_LINES
+                )
+            .coerceAtLeast(
+                0
+            )
+    }
+
+
     private fun clampScrollOffset() {
+
         _scrollOffset =
             _scrollOffset.coerceIn(
                 0,
@@ -284,47 +725,104 @@ class Terminal : ComputerMode {
             )
     }
 
+
+    // -------------------------------------------------------------------------
+    // Clearing
+    // -------------------------------------------------------------------------
+
+    fun clear() {
+
+        _lines.fill(
+            ""
+        )
+
+        _lineCount =
+            0
+
+        _startIndex =
+            0
+
+        _input =
+            ""
+
+        _inputCursor =
+            0
+
+        _scrollOffset =
+            0
+    }
+
+
+    // -------------------------------------------------------------------------
+    // ComputerMode
+    // -------------------------------------------------------------------------
+
     override fun handleInput(
         input: ComputerInput,
         runtime: ComputerRuntime
     ) {
+
         when (input) {
+
             is ComputerInput.Character -> {
-                Character.toChars(input.codepoint)
+
+                Character
+                    .toChars(
+                        input.codepoint
+                    )
                     .concatToString()
-                    .forEach(::appendChar)
+                    .forEach(
+                        ::appendChar
+                    )
             }
+
 
             ComputerInput.Backspace ->
                 popChar()
 
+
             ComputerInput.Enter ->
-                runtime.submitCurrentCommand()
+                runtime
+                    .submitCurrentCommand()
+
 
             ComputerInput.Up ->
                 scrollUp()
 
+
             ComputerInput.Down ->
                 scrollDown()
+
 
             ComputerInput.Left ->
                 moveCursorLeft()
 
+
             ComputerInput.Right ->
                 moveCursorRight()
 
-            else -> Unit
+
+            else ->
+                Unit
         }
     }
 
-    override fun displayState(): ComputerDisplayState {
-        val cursor = visibleCursorPosition
+
+    override fun displayState():
+            ComputerDisplayState {
+
+        val cursor =
+            visibleCursorPosition
 
         return ComputerDisplayState(
-            lines = visibleLines.toList(),
-            cursorRow = cursor?.row,
-            cursorColumn = cursor?.column
+            lines =
+                visibleLines.toList(),
+
+            cursorRow =
+                cursor?.row,
+
+            cursorColumn =
+                cursor?.column
         )
     }
-
 }

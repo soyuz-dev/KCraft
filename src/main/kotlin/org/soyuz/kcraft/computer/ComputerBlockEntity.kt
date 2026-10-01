@@ -163,6 +163,7 @@ class ComputerBlockEntity(
             ),
             serverLevel,
             blockPos,
+            ::deployGolem,
             computerId
         )
     }

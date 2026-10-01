@@ -29,6 +29,7 @@ class ComputerRuntime(
     val fileSystem: FileSystem,
     internal val level: ServerLevel,
     internal val position: BlockPos,
+    private val deployGolemAction: () -> Boolean,
     val id: UUID
 ) {
 
@@ -390,6 +391,9 @@ class ComputerRuntime(
             KCraftDirection.WEST -> Direction.WEST
         }
 
+
+    fun deployGolem(): Boolean =
+        deployGolemAction()
 
 }
 

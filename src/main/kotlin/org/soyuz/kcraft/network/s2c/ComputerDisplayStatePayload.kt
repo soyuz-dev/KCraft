@@ -6,6 +6,7 @@ import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
 import org.soyuz.kcraft.KCraft
+import org.soyuz.kcraft.computer.ComputerMode
 import org.soyuz.kcraft.computer.Terminal
 
 data class ComputerDisplayStatePayload(
@@ -19,16 +20,16 @@ data class ComputerDisplayStatePayload(
             CustomPacketPayload.Type<ComputerDisplayStatePayload>(
                 Identifier.fromNamespaceAndPath(
                     KCraft.MOD_ID,
-                    "terminal/state"
+                    "computer/display_state"
                 )
             )
 
         private val LINES_CODEC =
             ByteBufCodecs
-                .stringUtf8(Terminal.MAX_LINE_LENGTH)
+                .stringUtf8(ComputerMode.DISPLAY_WIDTH)
                 .apply(
                     ByteBufCodecs.list(
-                        Terminal.VISIBLE_LINES
+                        ComputerMode.VISIBLE_LINES
                     )
                 )
 

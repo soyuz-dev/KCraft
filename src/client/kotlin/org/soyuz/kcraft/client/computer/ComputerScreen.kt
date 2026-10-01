@@ -10,6 +10,7 @@ import net.minecraft.util.ARGB
 import net.minecraft.world.entity.player.Inventory
 import org.lwjgl.glfw.GLFW
 import org.soyuz.kcraft.computer.ComputerMenu
+import org.soyuz.kcraft.computer.ComputerMode
 import org.soyuz.kcraft.computer.Terminal
 import org.soyuz.kcraft.network.c2s.ComputerInputPayload
 import org.soyuz.kcraft.network.c2s.RequestComputerDisplayStatePayload
@@ -24,29 +25,24 @@ class ComputerScreen(
     inventory,
     title,
 
-    // Width and height of the container GUI.
-    //
-    // These are constructor arguments in the current Minecraft API;
-    // imageWidth/imageHeight themselves do not have setters.
-    //
-    // 176 is the usual vanilla container width.
-    // 250 gives KCraft enough vertical space for:
-    //
-    //   - the terminal
-    //   - the Ruby Golem slot
-    //   - the player's 3 inventory rows
-    //   - the player's hotbar
-    176,
-    250
+    /*
+     * KCraft is much wider than a normal Minecraft container.
+     *
+     * The terminal occupies the left half while the player's inventory and
+     * Ruby Golem controls occupy the right half.
+     */
+    ComputerMenu.GUI_WIDTH,
+    ComputerMenu.GUI_HEIGHT
 ) {
 
     init {
+
         /*
-         * Ask the server for the current terminal contents when the
-         * computer screen first opens.
+         * Ask the server for the terminal's current display when the GUI
+         * first opens.
          *
-         * Inventory slots do NOT need custom networking here.
-         * AbstractContainerMenu already synchronises those.
+         * Inventory contents do not need a custom packet; Minecraft's
+         * container synchronisation already handles them.
          */
         ClientPlayNetworking.send(
             RequestComputerDisplayStatePayload
@@ -59,30 +55,38 @@ class ComputerScreen(
     // -------------------------------------------------------------------------
 
     /*
-     * This is only the client-side representation of the terminal display.
-     *
-     * The authoritative terminal still lives in ComputerRuntime on the
-     * server. The server sends us snapshots of what should currently be
-     * visible.
+     * Client-side snapshot of what the server-side terminal currently shows.
      */
     private var visibleLines =
-        List(Terminal.VISIBLE_LINES) { "" }
+        List(
+            ComputerMode.VISIBLE_LINES
+        ) {
+            ""
+        }
 
-    private var cursorRow = 0
-    private var cursorColumn = 0
+    private var cursorRow =
+        0
+
+    private var cursorColumn =
+        0
 
 
     /**
-     * Called when the server sends an updated terminal display.
+     * Called when the server sends us a new terminal display state.
      */
     fun updateTerminalState(
         lines: List<String>,
         cursorRow: Int,
         cursorColumn: Int
     ) {
-        this.visibleLines = lines
-        this.cursorRow = cursorRow
-        this.cursorColumn = cursorColumn
+        this.visibleLines =
+            lines
+
+        this.cursorRow =
+            cursorRow
+
+        this.cursorColumn =
+            cursorColumn
     }
 
 
@@ -90,8 +94,9 @@ class ComputerScreen(
     // Keyboard input
     // -------------------------------------------------------------------------
 
-    /**
-     * Ordinary typed characters are sent to the server-side computer.
+    /*
+     * Ordinary typed characters go to the KCraft terminal rather than being
+     * interpreted locally.
      */
     override fun charTyped(
         event: CharacterEvent
@@ -100,6 +105,7 @@ class ComputerScreen(
             ComputerInputPayload(
                 type =
                     ComputerInputPayload.Type.CHARACTER,
+
                 character =
                     event.codepoint
             )
@@ -109,49 +115,67 @@ class ComputerScreen(
     }
 
 
-    /**
-     * Translate keyboard controls into KCraft computer input.
+    /*
+     * Translate useful keyboard controls into KCraft terminal input.
      */
     override fun keyPressed(
         event: KeyEvent
     ): Boolean {
+
         val input =
             when {
+
                 event.key ==
                         GLFW.GLFW_KEY_ENTER ->
+
                     ComputerInputPayload.Type.ENTER
+
 
                 event.key ==
                         GLFW.GLFW_KEY_BACKSPACE ->
+
                     ComputerInputPayload.Type.BACKSPACE
+
 
                 event.key ==
                         GLFW.GLFW_KEY_UP ->
+
                     ComputerInputPayload.Type.UP
+
 
                 event.key ==
                         GLFW.GLFW_KEY_DOWN ->
+
                     ComputerInputPayload.Type.DOWN
+
 
                 event.key ==
                         GLFW.GLFW_KEY_LEFT ->
+
                     ComputerInputPayload.Type.LEFT
+
 
                 event.key ==
                         GLFW.GLFW_KEY_RIGHT ->
+
                     ComputerInputPayload.Type.RIGHT
+
 
                 event.key ==
                         GLFW.GLFW_KEY_S &&
                         event.modifiers and
                         GLFW.GLFW_MOD_CONTROL != 0 ->
+
                     ComputerInputPayload.Type.SAVE
+
 
                 event.key ==
                         GLFW.GLFW_KEY_X &&
                         event.modifiers and
                         GLFW.GLFW_MOD_CONTROL != 0 ->
+
                     ComputerInputPayload.Type.EXIT
+
 
                 else ->
                     null
@@ -159,8 +183,7 @@ class ComputerScreen(
 
 
         /*
-         * If KCraft recognised the key, consume it so Minecraft does not
-         * also try to interpret it as ordinary container input.
+         * If KCraft recognised the key, consume it.
          */
         if (input != null) {
             ClientPlayNetworking.send(
@@ -174,10 +197,8 @@ class ComputerScreen(
 
 
         /*
-         * Normally E closes an inventory screen.
-         *
-         * KCraft currently treats the computer screen more like a terminal,
-         * so keep E from interfering with terminal usage.
+         * Prevent the inventory key from interfering while the KCraft
+         * computer is open.
          */
         if (
             event.key ==
@@ -188,11 +209,10 @@ class ComputerScreen(
 
 
         /*
-         * Anything KCraft does not care about is handed back to
-         * AbstractContainerScreen.
+         * Anything we don't explicitly handle goes back to Minecraft.
          *
-         * This is important now that we have real inventory slots:
-         * Minecraft still needs to handle its ordinary container controls.
+         * This remains important because AbstractContainerScreen is still
+         * responsible for ordinary inventory interaction.
          */
         return super.keyPressed(
             event
@@ -204,10 +224,10 @@ class ComputerScreen(
     // Vanilla labels
     // -------------------------------------------------------------------------
 
-    /**
-     * Suppress AbstractContainerScreen's normal title and inventory labels.
+    /*
+     * Suppress Minecraft's default container title and inventory labels.
      *
-     * KCraft has its own terminal-style interface instead.
+     * KCraft draws its own interface instead.
      */
     override fun extractLabels(
         graphics: GuiGraphicsExtractor,
@@ -226,44 +246,157 @@ class ComputerScreen(
         mouseY: Int,
         partialTick: Float
     ) {
-        /*
-         * VERY IMPORTANT:
-         *
-         * Let AbstractContainerScreen do its work.
-         *
-         * This is what gives us normal Minecraft container behaviour such as:
-         *
-         *   - rendering ItemStacks in slots
-         *   - slot hover state
-         *   - carried ItemStack rendering
-         *   - tooltips
-         *   - normal container interaction state
-         *
-         * The actual slot definitions live in ComputerMenu.
-         */
-        // ---------------------------------------------------------------------
-// Temporary Ruby Golem slot background
-// ---------------------------------------------------------------------
 
+        /*
+         * ---------------------------------------------------------------------
+         * Layout
+         * ---------------------------------------------------------------------
+         *
+         * 400 × 190
+         *
+         * ┌────────────────────────────────────────────────────┐
+         * │ ┌────────────────────────┐      Ruby Golem    [◇] │
+         * │ │                        │                        │
+         * │ │       TERMINAL         │     PLAYER INVENTORY   │
+         * │ │                        │     □ □ □ □ □ □ □ □ □ │
+         * │ │                        │     □ □ □ □ □ □ □ □ □ │
+         * │ │                        │     □ □ □ □ □ □ □ □ □ │
+         * │ │                        │                        │
+         * │ │                        │     □ □ □ □ □ □ □ □ □ │
+         * │ └────────────────────────┘                        │
+         * └────────────────────────────────────────────────────┘
+         */
+
+
+        // ---------------------------------------------------------------------
+        // Terminal panel
+        // ---------------------------------------------------------------------
+
+        val terminalLeft =
+            leftPos + 8
+
+        val terminalTop =
+            topPos + 8
+
+        val terminalRight =
+            leftPos + 216
+
+        val terminalBottom =
+            topPos + 166
+
+
+        /*
+         * Slight border around the terminal.
+         */
+        graphics.fill(
+            terminalLeft - 1,
+            terminalTop - 1,
+            terminalRight + 1,
+            terminalBottom + 1,
+            ARGB.opaque(
+                0x404040
+            )
+        )
+
+
+        /*
+         * Dark terminal background.
+         */
+        graphics.fill(
+            terminalLeft,
+            terminalTop,
+            terminalRight,
+            terminalBottom,
+            ARGB.opaque(
+                0x101010
+            )
+        )
+
+
+        // ---------------------------------------------------------------------
+        // Player inventory panel
+        // ---------------------------------------------------------------------
+
+        /*
+         * Temporary programmer-art background.
+         *
+         * We'll eventually replace this with a proper KCraft GUI.
+         */
+        graphics.fill(
+            leftPos + 220,
+            topPos + 76,
+            leftPos + 396,
+            topPos + 168,
+            ARGB.opaque(
+                0x202020
+            )
+        )
+
+
+        // ---------------------------------------------------------------------
+        // Ruby Golem slot
+        // ---------------------------------------------------------------------
+
+        /*
+         * Use ComputerMenu's coordinates rather than duplicating the numbers.
+         *
+         * This means moving the actual slot automatically moves its visual
+         * background as well.
+         */
         val golemSlotX =
-            leftPos + 151
+            leftPos +
+                    ComputerMenu.GOLEM_SLOT_X
 
         val golemSlotY =
-            topPos + 20
+            topPos +
+                    ComputerMenu.GOLEM_SLOT_Y
+
 
         /*
-         * Draw a simple dark 18 × 18 square behind the Ruby Golem slot.
-         *
-         * The actual interactive slot still belongs to ComputerMenu;
-         * this is purely visual.
+         * Outer slot border.
+         */
+        graphics.fill(
+            golemSlotX - 1,
+            golemSlotY - 1,
+            golemSlotX + 19,
+            golemSlotY + 19,
+            ARGB.opaque(
+                0x707070
+            )
+        )
+
+
+        /*
+         * Recessed slot background.
          */
         graphics.fill(
             golemSlotX,
             golemSlotY,
             golemSlotX + 18,
             golemSlotY + 18,
-            ARGB.opaque(0x383838)
+            ARGB.opaque(
+                0x383838
+            )
         )
+
+
+        // ---------------------------------------------------------------------
+        // Vanilla container rendering
+        // ---------------------------------------------------------------------
+
+        /*
+         * Let Minecraft render the actual ItemStacks and manage container
+         * state on top of our backgrounds.
+         *
+         * This handles:
+         *
+         *   - Gerald
+         *   - player inventory items
+         *   - carried ItemStacks
+         *   - slot hover state
+         *   - tooltips
+         *   - ordinary container interactions
+         */
         super.extractRenderState(
             graphics,
             mouseX,
@@ -272,21 +405,15 @@ class ComputerScreen(
         )
 
 
-        /*
-         * Terminal rendering.
-         *
-         * leftPos/topPos are the top-left corner of the 176 × 250
-         * container area on the player's screen.
-         *
-         * Keeping the terminal relative to these coordinates means the
-         * terminal and the menu slots move together when Minecraft centres
-         * the GUI on different screen sizes.
-         */
+        // ---------------------------------------------------------------------
+        // Terminal text
+        // ---------------------------------------------------------------------
+
         val terminalX =
-            leftPos + 20
+            leftPos + 14
 
         val terminalY =
-            topPos + 20
+            topPos + 14
 
 
         for (
@@ -308,12 +435,39 @@ class ComputerScreen(
         }
 
 
+        // ---------------------------------------------------------------------
+        // Temporary labels
+        // ---------------------------------------------------------------------
+
         /*
-         * We deliberately are NOT drawing custom slot backgrounds yet.
-         *
-         * ComputerMenu provides the functional slots and Minecraft handles
-         * the items. Once the inventory behaviour is confirmed to work,
-         * this screen can get an actual KCraft GUI/background.
+         * Just enough visual structure to make the programmer-art GUI
+         * understandable.
          */
+
+        graphics.text(
+            font,
+            Component.literal(
+                "Ruby Golem"
+            ),
+            leftPos + 292,
+            topPos + 24,
+            ARGB.opaque(
+                0xFFFFFF
+            )
+        )
+
+
+        graphics.text(
+            font,
+            Component.literal(
+                "Inventory"
+            ),
+            leftPos +
+                    ComputerMenu.INVENTORY_X,
+            topPos + 70,
+            ARGB.opaque(
+                0xFFFFFF
+            )
+        )
     }
 }
